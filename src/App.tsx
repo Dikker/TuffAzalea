@@ -23,6 +23,14 @@ export default function App() {
   const [posts, setPosts] = useState<UserContribution[]>([]);
 
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   useEffect(() => {
     // Check for existing session
@@ -55,9 +63,9 @@ export default function App() {
       photoURL: (email === 'josegabriel@cleanpin.ph' || displayName === 'Jose Gabriel') 
         ? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=100' 
         : undefined,
-      points: existingUser?.points ?? (email === 'josegabriel@cleanpin.ph' ? 450 : 0),
-      level: existingUser?.level ?? (email === 'josegabriel@cleanpin.ph' ? 14 : 1),
-      contributions: existingUser?.contributions ?? (email === 'josegabriel@cleanpin.ph' ? 12 : 0),
+      points: existingUser?.points ?? 0,
+      level: existingUser?.level ?? 1,
+      contributions: existingUser?.contributions ?? 0,
       achievements: existingUser?.achievements || [],
       role: role
     };
@@ -86,6 +94,7 @@ export default function App() {
       status: 'pending'
     };
     setPosts([newPost, ...posts]);
+    setToast({ message: 'Trash report successfully posted!', type: 'success' });
   };
 
   const updatePostStatus = (id: string, status: UserContribution['status']) => {
@@ -246,7 +255,7 @@ export default function App() {
           </div>
         );
       case 'performance':
-        return <Performance />;
+        return <Performance user={user} />;
       case 'community':
         return <Community user={user} posts={posts} />;
       case 'about':
@@ -295,6 +304,30 @@ export default function App() {
         onSubmit={handleNewPost}
         posts={posts}
       />
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className={cn(
+              "fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[3000] px-6 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 border",
+              toast.type === 'success' ? "bg-emerald-600 border-emerald-500 text-white" : "bg-red-600 border-red-500 text-white"
+            )}
+          >
+            <div className="bg-white/20 p-1 rounded-full">
+              {toast.type === 'success' ? (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+              )}
+            </div>
+            <span className="text-sm font-bold tracking-tight">{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {

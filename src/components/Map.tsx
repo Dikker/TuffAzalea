@@ -76,19 +76,31 @@ const Map: React.FC<MapProps> = ({
     }
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery) return;
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
 
     try {
       // OpenStreetMap Nominatim API for geocoding
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery + ", Philippines")}`);
+      // We append "Philippines" to narrow down results to the user's expected region
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery + ", Philippines")}`, {
+        headers: {
+          'Accept-Language': 'en-US,en;q=0.5'
+        }
+      });
       const data = await response.json();
       if (data && data.length > 0) {
-        const { lat, lon } = data[0];
+        const { lat, lon, display_name } = data[0];
         const newLat = parseFloat(lat);
         const newLng = parseFloat(lon);
+        
+        // Update both center and map view
         setMapCenter([newLat, newLng]);
+        
+        // Extract a clean name (e.g., "Sampaloc" instead of the full address)
+        const parts = display_name.split(',');
+        const cleanName = parts[0];
+        setSearchQuery(cleanName);
+        
         if (selectable) {
           setSelectedLocation([newLat, newLng]);
           if (onLocationSelect) onLocationSelect(newLat, newLng);
@@ -96,6 +108,14 @@ const Map: React.FC<MapProps> = ({
       }
     } catch (error) {
       console.error("Geocoding error:", error);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      handleSearch();
     }
   };
 
@@ -159,18 +179,23 @@ const Map: React.FC<MapProps> = ({
       {/* Controls Overlay */}
       <div className="absolute top-4 left-4 right-4 z-[1000] flex flex-col space-y-2 pointer-events-none">
         <div className="flex space-x-2 pointer-events-auto">
-          <form onSubmit={handleSearch} className="flex-1 flex overflow-hidden rounded-lg shadow-lg border border-slate-200 bg-white">
+          <div className="flex-1 flex overflow-hidden rounded-lg shadow-lg border border-slate-200 bg-white">
             <input 
               type="text" 
               placeholder="Search specific location..." 
               className="flex-1 px-4 py-2 text-sm focus:outline-none"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
             />
-            <button type="submit" className="bg-primary text-white p-2 hover:bg-primary/90 transition-colors">
+            <button 
+              type="button" 
+              onClick={handleSearch}
+              className="bg-primary text-white p-2 hover:bg-primary/90 transition-colors"
+            >
               <Search size={18} />
             </button>
-          </form>
+          </div>
           
           <button 
             onClick={handleLocateUser}
