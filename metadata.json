@@ -1,0 +1,6 @@
+{
+  "name": "CleanPin",
+  "description": "A community-driven trash mapping app for the Philippines to support SDG 11. Report, track, and clean up waste in your neighborhood.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["AI News Feed", "Real-time Mapping", "Community Contributions"]
+}
