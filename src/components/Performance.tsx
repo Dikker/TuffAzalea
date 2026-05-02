@@ -17,7 +17,7 @@ const Performance: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 h-full overflow-y-auto pr-2 custom-scrollbar">
+    <div className="space-y-6 animate-in fade-in duration-500">
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, i) => (

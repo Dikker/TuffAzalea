@@ -3,7 +3,7 @@ import { Globe, Heart, Shield, Users, Target } from 'lucide-react';
 
 const About: React.FC = () => {
   return (
-    <div className="space-y-12 pb-20 animate-in fade-in duration-500 overflow-y-auto max-h-full pr-4 custom-scrollbar">
+    <div className="space-y-12 animate-in fade-in duration-500">
       {/* Hero Section */}
       <section className="bg-white rounded-[2rem] p-8 md:p-12 border border-border shadow-sm overflow-hidden relative">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-20 -mt-20" />

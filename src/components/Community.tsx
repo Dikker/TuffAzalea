@@ -54,9 +54,9 @@ const Community: React.FC<CommunityProps> = ({ user, posts }) => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 pb-20 animate-in fade-in duration-500">
+    <div className="space-y-6 animate-in fade-in duration-500">
       {/* Create Post */}
-      <div className="bg-white rounded-3xl p-5 border border-border shadow-sm">
+      <div className="bg-white rounded-3xl p-5 md:p-6 border border-border shadow-sm">
         <div className="flex space-x-4">
           <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-primary font-bold text-xs border border-primary/10 overflow-hidden">
             {user?.photoURL ? <img src={user.photoURL} alt={user.displayName} /> : getInitials(user?.displayName)}

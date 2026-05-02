@@ -15,7 +15,7 @@ const Contact: React.FC = () => {
   };
 
   return (
-    <div className="animate-in fade-in duration-500 max-w-5xl mx-auto pb-20 overflow-y-auto max-h-full pr-4 custom-scrollbar">
+    <div className="animate-in fade-in duration-500">
       <div className="mb-12">
         <h1 className="text-3xl font-display font-bold text-[#064e3b] mb-4">Get in touch</h1>
         <p className="text-muted-foreground">Have questions about our project or want to collaborate? We'd love to hear from you.</p>

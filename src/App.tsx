@@ -113,9 +113,9 @@ export default function App() {
     switch (activeTab) {
       case 'home':
         return (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 h-full">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Main Content Area */}
-            <div className="lg:col-span-3 space-y-8 flex flex-col min-h-0">
+            <div className="lg:col-span-3 space-y-8 flex flex-col">
               {/* Introduction Section */}
               <div className="bg-slate-900 rounded-[2rem] p-8 md:p-10 text-white relative overflow-hidden shadow-2xl">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl -mr-20 -mt-20" />
@@ -158,7 +158,7 @@ export default function App() {
               </div>
 
               {/* Map Preview */}
-              <section className="bg-slate-100 rounded-2xl overflow-hidden shadow-inner border border-slate-200 relative flex-1 min-h-[400px]">
+              <section className="bg-slate-100 rounded-2xl overflow-hidden shadow-inner border border-slate-200 relative min-h-[500px]">
                 <Map markers={markers} />
                 {user?.role !== 'admin' && (
                   <button 
@@ -173,7 +173,7 @@ export default function App() {
             </div>
 
             {/* Side Activity Panel */}
-            <div className="lg:col-span-1 space-y-6 flex flex-col h-full min-h-0">
+            <div className="lg:col-span-1 space-y-6 flex flex-col min-h-[400px]">
               <div className="bg-white rounded-2xl border border-border flex flex-col h-full overflow-hidden">
                 <div className="p-6 border-b border-muted">
                   <h2 className="font-display font-bold text-lg">Community Activity</h2>
@@ -226,7 +226,7 @@ export default function App() {
                   <div className="p-3 rounded-xl bg-secondary border border-primary/10">
                      <div className="flex items-center space-x-2 mb-2">
                         <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-white">
-                          <Plus size={12} />
+                           <Plus size={12} />
                         </div>
                         <p className="text-xs font-bold text-primary">System</p>
                      </div>
@@ -241,7 +241,7 @@ export default function App() {
         );
       case 'map':
         return (
-          <div className="h-[calc(100vh-140px)] w-full">
+          <div className="h-[70vh] min-h-[500px] w-full bg-white rounded-3xl overflow-hidden border border-border shadow-sm">
             <Map markers={markers} selectable={user?.role !== 'admin'} onLocationSelect={() => {}} />
           </div>
         );
@@ -269,22 +269,23 @@ export default function App() {
         onLogout={handleLogout}
       />
       
-      <main className="flex-1 flex flex-col min-w-0 bg-[#f3f4f6] pb-16 md:pb-0">
+      <main className="flex-1 flex flex-col min-w-0 bg-[#f3f4f6]">
         <Header title="CleanPin" user={user} />
         
-        <div className="flex-1 p-4 sm:p-8 h-full overflow-y-auto custom-scrollbar">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="h-full"
-            >
-              {renderContent()}
-            </motion.div>
-          </AnimatePresence>
+        <div className="flex-1 overflow-y-auto custom-scrollbar overflow-x-hidden">
+          <div className="p-4 md:p-8 lg:p-12 pb-24 md:pb-8 max-w-screen-2xl mx-auto">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                {renderContent()}
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
       </main>
 
