@@ -22,42 +22,42 @@ const Performance: React.FC<PerformanceProps> = ({ user }) => {
   ];
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-4 md:space-y-6 animate-in fade-in duration-500">
       {/* Profile Header */}
-      <div className="bg-white rounded-[2rem] p-8 border border-border shadow-sm flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8 relative overflow-hidden">
+      <div className="bg-white rounded-2xl md:rounded-[2rem] p-6 md:p-8 border border-border shadow-sm flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-8 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-20 -mt-20" />
         
         <div className="relative">
-          <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-secondary flex items-center justify-center text-primary font-bold text-3xl border-4 border-white shadow-xl overflow-hidden ring-1 ring-border">
+          <div className="w-20 h-20 md:w-32 md:h-32 rounded-full bg-secondary flex items-center justify-center text-primary font-bold text-2xl md:text-3xl border-4 border-white shadow-xl overflow-hidden ring-1 ring-border">
             {user?.photoURL ? (
               <img src={user.photoURL} alt={user.displayName} className="w-full h-full object-cover" />
             ) : (
               user?.displayName?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '??'
             )}
           </div>
-          <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-1.5 rounded-full border-4 border-white shadow-sm">
-            <Shield size={16} />
+          <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-1 rounded-full border-2 md:border-4 border-white shadow-sm">
+            <Shield size={14} />
           </div>
         </div>
 
-        <div className="flex-1 text-center md:text-left pt-2">
-          <h1 className="text-3xl font-display font-bold text-slate-800 mb-1">{user?.displayName}</h1>
-          <div className="flex flex-wrap justify-center md:justify-start items-center gap-3">
-            <div className="flex items-center space-x-1.5 text-xs font-medium text-slate-500 bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-              <Mail size={12} className="text-slate-400" />
-              <span>{user?.email}</span>
+        <div className="flex-1 text-center md:text-left pt-0 md:pt-2">
+          <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-800 mb-1">{user?.displayName}</h1>
+          <div className="flex flex-wrap justify-center md:justify-start items-center gap-2 md:gap-3">
+            <div className="flex items-center space-x-1.5 text-[10px] md:text-xs font-medium text-slate-500 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-100">
+              <Mail size={10} className="text-slate-400" />
+              <span className="truncate max-w-[150px]">{user?.email}</span>
             </div>
-            <div className="flex items-center space-x-1.5 text-xs font-medium text-primary bg-secondary px-3 py-1 rounded-full border border-primary/10">
-              <User size={12} className="text-primary" />
+            <div className="flex items-center space-x-1.5 text-[10px] md:text-xs font-medium text-primary bg-secondary px-2.5 py-1 rounded-full border border-primary/10">
+              <User size={10} className="text-primary" />
               <span className="uppercase tracking-wider">Level {user?.level} Eco-Warrior</span>
             </div>
           </div>
-          <p className="text-slate-500 text-sm mt-4 max-w-lg leading-relaxed">
+          <p className="text-slate-500 text-xs md:text-sm mt-3 md:mt-4 max-w-lg leading-relaxed">
             Participating in community cleanup since 2024. Dedicated to making our neighborhoods cleaner and safer for everyone.
           </p>
         </div>
 
-        <div className="bg-slate-900 text-white rounded-2xl p-6 min-w-[180px] shadow-lg relative group overflow-hidden">
+        <div className="bg-slate-900 text-white rounded-xl md:rounded-2xl p-4 md:p-6 w-full md:min-w-[180px] md:w-auto shadow-lg relative group overflow-hidden">
           <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1.5 relative z-10">Current Standing</p>
           <div className="flex items-end space-x-2 relative z-10">

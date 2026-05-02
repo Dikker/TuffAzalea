@@ -90,12 +90,12 @@ const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, onSubmit, po
     <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
       
-      <div className="relative bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="relative bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[95dvh] md:max-h-[90vh]">
         {/* Header */}
-        <div className="bg-white p-6 border-b border-border flex items-center justify-between">
+        <div className="bg-white p-4 md:p-6 border-b border-border flex items-center justify-between flex-shrink-0">
           <div>
-            <h2 className="text-xl font-display font-bold text-[#064e3b]">Report Waste Finding</h2>
-            <p className="text-xs text-muted-foreground">Add to the community activity map</p>
+            <h2 className="text-lg md:text-xl font-display font-bold text-[#064e3b]">Report Waste Finding</h2>
+            <p className="text-[10px] md:text-xs text-muted-foreground">Add to the community activity map</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition-colors text-slate-400">
             <X size={20} />
@@ -103,14 +103,14 @@ const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, onSubmit, po
         </div>
 
         {success ? (
-          <div className="flex-1 p-12 flex flex-col items-center justify-center text-center">
-            <CheckCircle size={64} className="text-primary mb-4 animate-bounce" />
-            <h3 className="text-2xl font-bold text-slate-800 mb-2">Report Submitted!</h3>
-            <p className="text-slate-500">Thank you for your contribution to SDG 11. Your report has been published to the community dashboard.</p>
+          <div className="flex-1 p-8 md:p-12 flex flex-col items-center justify-center text-center">
+            <CheckCircle size={56} className="text-primary mb-4 animate-bounce" />
+            <h3 className="text-xl md:text-2xl font-bold text-slate-800 mb-2">Report Submitted!</h3>
+            <p className="text-xs md:text-sm text-slate-500">Thank you for your contribution to SDG 11. Your report has been published to the community dashboard.</p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
               {/* Left Column: Details */}
               <div className="space-y-4">
                 <div>

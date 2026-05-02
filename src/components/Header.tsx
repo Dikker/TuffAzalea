@@ -29,13 +29,13 @@ const Header: React.FC<HeaderProps> = ({ title, user }) => {
   };
 
   return (
-    <header className="h-16 border-b border-border bg-white px-8 flex items-center justify-between relative z-[2000]">
+    <header className="h-16 border-b border-border bg-white px-4 md:px-8 flex items-center justify-between relative z-[2000] flex-shrink-0">
       <div className="flex items-center space-x-2">
-        <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-        <h1 className="text-lg font-display font-bold text-[#064e3b] tracking-tight">{title}</h1>
+        <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-primary rounded-full animate-pulse" />
+        <h1 className="text-base md:text-lg font-display font-bold text-[#064e3b] tracking-tight">{title}</h1>
       </div>
       
-      <div className="flex items-center space-x-6">
+      <div className="flex items-center space-x-2 md:space-x-6">
         <div className="relative group hidden lg:block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={14} />
           <input 
@@ -45,7 +45,7 @@ const Header: React.FC<HeaderProps> = ({ title, user }) => {
           />
         </div>
         
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 md:space-x-4">
           <div className="relative">
             <button 
               onClick={() => setShowNotifications(!showNotifications)}
@@ -67,7 +67,7 @@ const Header: React.FC<HeaderProps> = ({ title, user }) => {
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-border overflow-hidden ring-1 ring-black/5"
+                  className="absolute right-0 mt-2 w-[calc(100vw-32px)] sm:w-80 bg-white rounded-2xl shadow-2xl border border-border overflow-hidden ring-1 ring-black/5"
                 >
                   <div className="p-4 border-b border-border flex items-center justify-between bg-slate-50/50">
                     <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest">Notifications</h3>

@@ -270,7 +270,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-white font-sans selection:bg-primary/20 selection:text-primary overflow-hidden">
+    <div className="fixed inset-0 flex flex-col md:flex-row bg-white font-sans selection:bg-primary/20 selection:text-primary overflow-hidden">
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
@@ -278,11 +278,11 @@ export default function App() {
         onLogout={handleLogout}
       />
       
-      <main className="flex-1 flex flex-col min-w-0 bg-[#f3f4f6]">
+      <main className="flex-1 flex flex-col min-w-0 min-h-0 bg-[#f3f4f6]">
         <Header title="CleanPin" user={user} />
         
         <div className="flex-1 overflow-y-auto custom-scrollbar overflow-x-hidden">
-          <div className="p-4 md:p-8 lg:p-12 pb-24 md:pb-8 max-w-screen-2xl mx-auto">
+          <div className="p-4 md:p-8 lg:p-12 pb-32 md:pb-8 max-w-screen-2xl mx-auto">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -330,6 +330,9 @@ export default function App() {
       </AnimatePresence>
 
       <style>{`
+        .custom-scrollbar {
+          -webkit-overflow-scrolling: touch;
+        }
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
         }
