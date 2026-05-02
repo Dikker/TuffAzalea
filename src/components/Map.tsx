@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Circle } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Circle, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
 import { Search, Navigation, Layers } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
@@ -106,7 +106,9 @@ const Map: React.FC<MapProps> = ({
         zoom={13} 
         className="w-full h-full"
         style={{ height: '100%', width: '100%' }}
+        zoomControl={false}
       >
+        <ZoomControl position="bottomleft" />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
