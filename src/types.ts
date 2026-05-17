@@ -25,6 +25,7 @@ export interface UserProfile {
   contributions: number;
   achievements: Achievement[];
   role: 'user' | 'admin';
+  isBanned?: boolean;
 }
 
 export interface Achievement {
@@ -42,4 +43,13 @@ export interface NewsItem {
   url: string;
   date: string;
   source: string;
+}
+
+export interface SystemLog {
+  id: string;
+  action: string;
+  user: string;
+  target?: string;
+  timestamp: number;
+  type: 'auth' | 'moderation' | 'system' | 'user';
 }

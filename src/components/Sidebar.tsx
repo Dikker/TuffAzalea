@@ -17,21 +17,21 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogo
   const [notifications, setNotifications] = useState(true);
   const [profileVisible, setProfileVisible] = useState(true);
 
-  const navItems = [
-    { id: 'home', label: 'Home', icon: Home },
-    { id: 'map', label: 'Map', icon: MapIcon },
-    { id: 'community', label: 'Community', icon: Users },
-    { id: 'performance', label: 'Profile', icon: User },
-    { id: 'about', label: 'About', icon: Info },
-    { id: 'contact', label: 'Contact', icon: Mail },
-  ];
-
   const isAdmin = user?.role === 'admin';
+
+  const navItems = [
+    { id: 'home', label: 'Home', icon: Home, visible: true },
+    { id: 'map', label: 'Map', icon: MapIcon, visible: true },
+    { id: 'community', label: 'Community', icon: Users, visible: !isAdmin },
+    { id: 'performance', label: 'Profile', icon: User, visible: !isAdmin },
+    { id: 'about', label: 'About', icon: Info, visible: !isAdmin },
+    { id: 'contact', label: 'Contact', icon: Mail, visible: !isAdmin },
+  ].filter(item => item.visible);
 
   return (
     <div className="w-full md:w-[80px] h-16 md:h-full bg-white border-t md:border-t-0 md:border-r border-border flex flex-row md:flex-col items-center justify-around md:justify-start py-0 md:py-6 shadow-lg md:shadow-sm z-[2005] fixed bottom-0 md:relative">
-      <div className="hidden md:flex mb-10 p-2 bg-secondary rounded-xl text-primary font-bold text-lg">
-        CP
+      <div className="hidden md:flex mb-10 w-12 h-12 overflow-hidden rounded-xl items-center justify-center p-1 uppercase">
+        <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
       </div>
       
       <nav className="flex-1 flex flex-row md:flex-col items-center justify-around md:justify-start space-x-1 md:space-x-0 md:space-y-4 w-full md:w-auto px-2 md:px-0">

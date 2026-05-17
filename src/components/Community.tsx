@@ -9,9 +9,25 @@ interface CommunityProps {
   posts: UserContribution[];
 }
 
+interface CommunityPost {
+  id: string;
+  userName: string;
+  userAvatar?: string;
+  content: string;
+  image?: string | null;
+  location?: string | null;
+  likes: number;
+  comments: number;
+  time: string;
+  verified: boolean;
+  isNew?: boolean;
+  timestamp: number;
+  likedBy?: string[]; // Array of user UIDs who liked the post
+}
+
 const Community: React.FC<CommunityProps> = ({ user, posts }) => {
   const [newPostText, setNewPostText] = useState('');
-  const [localPosts, setLocalPosts] = useState<any[]>([]);
+  const [localPosts, setLocalPosts] = useState<CommunityPost[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -51,7 +67,7 @@ const Community: React.FC<CommunityProps> = ({ user, posts }) => {
     e.preventDefault();
     if (!newPostText.trim() && !selectedImage) return;
 
-    const post = {
+    const post: CommunityPost = {
       id: Math.random().toString(36).substr(2, 9),
       userName: user?.displayName || 'Anonymous',
       userAvatar: user?.photoURL,
@@ -61,9 +77,10 @@ const Community: React.FC<CommunityProps> = ({ user, posts }) => {
       likes: 0,
       comments: 0,
       time: 'Just now',
-      verified: user?.level && user.level > 10,
+      verified: !!(user?.level && user.level > 10),
       isNew: true,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      likedBy: []
     };
 
     const updatedPosts = [post, ...localPosts];
@@ -72,6 +89,35 @@ const Community: React.FC<CommunityProps> = ({ user, posts }) => {
     setNewPostText('');
     setSelectedImage(null);
     setSelectedLocation(null);
+  };
+
+  const handleLike = (postId: string) => {
+    if (!user) return;
+    
+    const updatedPosts = localPosts.map(post => {
+      if (post.id === postId) {
+        const likedBy = post.likedBy || [];
+        const isLiked = likedBy.includes(user.uid);
+        
+        if (isLiked) {
+          return {
+            ...post,
+            likes: Math.max(0, post.likes - 1),
+            likedBy: likedBy.filter(id => id !== user.uid)
+          };
+        } else {
+          return {
+            ...post,
+            likes: post.likes + 1,
+            likedBy: [...likedBy, user.uid]
+          };
+        }
+      }
+      return post;
+    });
+    
+    setLocalPosts(updatedPosts);
+    localStorage.setItem('cleanpin_community_posts', JSON.stringify(updatedPosts));
   };
 
   const getInitials = (name?: string) => {
@@ -225,8 +271,14 @@ const Community: React.FC<CommunityProps> = ({ user, posts }) => {
 
               {/* Footer / Actions */}
               <div className="p-3 border-t border-slate-50 flex items-center justify-around">
-                <button className="flex items-center space-x-2 text-slate-500 hover:text-red-500 transition-colors p-2 text-xs font-bold">
-                  <Heart size={18} />
+                <button 
+                  onClick={() => handleLike(post.id)}
+                  className={cn(
+                    "flex items-center space-x-2 transition-colors p-2 text-xs font-bold",
+                    user && post.likedBy?.includes(user.uid) ? "text-red-500" : "text-slate-500 hover:text-red-500"
+                  )}
+                >
+                  <Heart size={18} fill={user && post.likedBy?.includes(user.uid) ? "currentColor" : "none"} />
                   <span>{post.likes}</span>
                 </button>
                 <button className="flex items-center space-x-2 text-slate-500 hover:text-primary transition-colors p-2 text-xs font-bold">

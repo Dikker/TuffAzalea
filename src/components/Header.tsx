@@ -30,8 +30,10 @@ const Header: React.FC<HeaderProps> = ({ title, user }) => {
 
   return (
     <header className="h-16 border-b border-border bg-white px-4 md:px-8 flex items-center justify-between relative z-[2000] flex-shrink-0">
-      <div className="flex items-center space-x-2">
-        <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-primary rounded-full animate-pulse" />
+      <div className="flex items-center space-x-3">
+        <div className="w-8 h-8 rounded-lg overflow-hidden bg-white border border-border flex items-center justify-center p-1">
+          <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
+        </div>
         <h1 className="text-base md:text-lg font-display font-bold text-[#064e3b] tracking-tight">{title}</h1>
       </div>
       

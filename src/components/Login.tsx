@@ -78,22 +78,31 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-[#f0f9f6] p-4 font-sans">
-      <div className="w-full max-w-md">
+    <div className="fixed inset-0 z-[3000] bg-[#f0f9f6] font-sans overflow-y-auto p-4 md:p-8 flex items-start justify-center">
+      <div className="w-full max-w-md my-auto flex flex-col py-8">
         {/* Logo Section */}
-        <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-white rounded-[2rem] shadow-xl flex items-center justify-center mx-auto mb-4 border border-primary/10">
-            <span className="text-2xl font-black text-primary">CP</span>
-          </div>
-          <h1 className="text-3xl font-display font-bold text-[#064e3b]">CleanPin</h1>
-          <p className="text-muted-foreground mt-2">Sustainable Community Mapping</p>
+        <div className="text-center mb-6 md:mb-8">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="w-20 h-20 md:w-24 md:h-24 bg-white rounded-2xl md:rounded-[2rem] shadow-xl flex items-center justify-center mx-auto mb-4 border border-primary/10 overflow-hidden p-3"
+          >
+            <img src="/logo.png" alt="CleanPin Logo" className="w-full h-full object-contain" />
+          </motion.div>
+          <h1 className="text-2xl md:text-3xl font-display font-bold text-[#064e3b]">CleanPin</h1>
+          <p className="text-xs md:text-sm text-muted-foreground mt-1 md:mt-2">Sustainable Community Mapping</p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-white rounded-[2rem] p-8 shadow-2xl border border-border/50 relative overflow-hidden">
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white rounded-2xl md:rounded-[2rem] p-6 md:p-8 shadow-2xl border border-border/50 relative overflow-hidden"
+        >
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/20 via-primary to-primary/20" />
           
-          <h2 className="text-xl font-bold text-slate-800 mb-6">
+          <h2 className="text-lg md:text-xl font-bold text-slate-800 mb-6">
             {isRegistering ? 'Create your account' : 'Sign in to your account'}
           </h2>
 
@@ -117,7 +126,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     type="text" 
                     required
                     placeholder="Juan Dela Cruz"
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all text-sm"
+                    className="w-full pl-12 pr-4 py-3 md:py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all text-sm"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                   />
@@ -133,7 +142,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   type="email" 
                   required
                   placeholder="name@example.com"
-                  className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all text-sm"
+                  className="w-full pl-12 pr-4 py-3 md:py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all text-sm"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -148,7 +157,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   type={showPassword ? "text" : "password"} 
                   required
                   placeholder="••••••••"
-                  className="w-full pl-12 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all text-sm"
+                  className="w-full pl-12 pr-12 py-3 md:py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all text-sm"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -194,10 +203,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               Demo Access: Use any password. Use <span className="text-primary font-bold">admin@cleanpin.ph</span> for Admin access.
             </p>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="text-center mt-8">
-          <p className="text-sm text-slate-500">
+        <div className="text-center mt-6 md:mt-8">
+          <p className="text-xs md:text-sm text-slate-500">
             {isRegistering ? 'Already have an account?' : "Don't have an account?"} 
             <button 
               onClick={() => setIsRegistering(!isRegistering)}
@@ -210,7 +219,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       </div>
       
       {/* Decorative background elements */}
-      <div className="absolute top-0 right-0 p-10 opacity-10 pointer-events-none">
+      <div className="absolute top-0 right-0 p-10 opacity-10 pointer-events-none hidden lg:block">
         <ShieldCheck size={400} className="text-primary" />
       </div>
     </div>

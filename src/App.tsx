@@ -71,6 +71,7 @@ export default function App() {
     };
     setUser(mockUser);
     setIsLoggedIn(true);
+    setActiveTab(role === 'admin' ? 'admin' : 'home');
     localStorage.setItem('cleanpin_session', JSON.stringify(mockUser));
   };
 
