@@ -346,7 +346,18 @@ export default function App() {
 
               {/* Map Preview */}
               <section className="bg-slate-100 rounded-2xl overflow-hidden shadow-inner border border-slate-200 relative h-[300px] sm:h-[400px] md:h-[500px]">
-                <Map markers={markers} />
+                <Map 
+                  markers={markers} 
+                  onMarkerSelect={(id) => {
+                    setActiveTab('map');
+                    setSelectedPinId(id);
+                    const clickedPost = posts.find(p => p.id === id);
+                    if (clickedPost) {
+                      setMapFocusCenter([clickedPost.location.lat, clickedPost.location.lng]);
+                    }
+                  }}
+                  selectedMarkerId={selectedPinId || undefined}
+                />
                 {user?.role !== 'admin' && (
                   <button 
                     onClick={() => setIsReportModalOpen(true)}
