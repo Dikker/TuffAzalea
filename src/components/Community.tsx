@@ -3,8 +3,6 @@ import { UserProfile, UserContribution } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Heart, MessageCircle, Share2, Image as ImageIcon, Send, MoreHorizontal, UserCheck, MapPin, X } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { db, saveFirebaseCommunityPost } from '../lib/firebase';
-import { collection, onSnapshot, query, orderBy, setDoc, doc } from 'firebase/firestore';
 
 interface CommunityProps {
   user: UserProfile | null;
@@ -35,54 +33,14 @@ const Community: React.FC<CommunityProps> = ({ user, posts }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Real-time listener for community posts collection in Firestore
-    const q = query(collection(db, 'community_posts'), orderBy('timestamp', 'desc'));
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      if (snapshot.empty) {
-        // If entirely empty, seed 2 default encouraging posts so the app greets users nicely
-        const defaultSeeds: CommunityPost[] = [
-          {
-            id: 'community-seed-1',
-            userName: 'Jose Gabriel',
-            content: "Just spent my morning cleaning up around España Boulevard near UST. Let's keep our university belt green and clean, guys! Bulky packaging collected.",
-            image: "https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&q=80&w=800",
-            location: 'España Blvd, Sampaloc, Manila',
-            likes: 4,
-            comments: 1,
-            time: '1h ago',
-            verified: false,
-            timestamp: Date.now() - 1000 * 60 * 60,
-            likedBy: []
-          },
-          {
-            id: 'community-seed-2',
-            userName: 'Admin Administrator',
-            content: "Welcome to the CleanPin community board! Here you can post your visual reports of cleaning campaigns, ask for help, or coordinates actions.",
-            image: null,
-            location: 'CleanPin Headquarters',
-            likes: 8,
-            comments: 0,
-            time: '3h ago',
-            verified: true,
-            timestamp: Date.now() - 1000 * 60 * 60 * 3,
-            likedBy: []
-          }
-        ];
-        for (const seed of defaultSeeds) {
-          await saveFirebaseCommunityPost(seed);
-        }
-      } else {
-        const cloudPosts: CommunityPost[] = [];
-        snapshot.forEach(docSnap => {
-          cloudPosts.push(docSnap.data() as CommunityPost);
-        });
-        setLocalPosts(cloudPosts);
+    const savedPosts = localStorage.getItem('cleanpin_community_posts');
+    if (savedPosts) {
+      try {
+        setLocalPosts(JSON.parse(savedPosts));
+      } catch (e) {
+        console.error('Error parsing community posts', e);
       }
-    }, (error) => {
-      console.warn("Firestore subscription error for community posts:", error);
-    });
-
-    return () => unsubscribe();
+    }
   }, []);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,11 +58,12 @@ const Community: React.FC<CommunityProps> = ({ user, posts }) => {
     if (selectedLocation) {
       setSelectedLocation(null);
     } else {
-      setSelectedLocation('Sampaloc, Manila');
+      // Mock location for now, in a real app this would use geolocation
+      setSelectedLocation('Sampaloc Lake, San Pablo');
     }
   };
 
-  const handlePostSubmit = async (e: React.FormEvent) => {
+  const handlePostSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPostText.trim() && !selectedImage) return;
 
@@ -124,38 +83,41 @@ const Community: React.FC<CommunityProps> = ({ user, posts }) => {
       likedBy: []
     };
 
+    const updatedPosts = [post, ...localPosts];
+    setLocalPosts(updatedPosts);
+    localStorage.setItem('cleanpin_community_posts', JSON.stringify(updatedPosts));
     setNewPostText('');
     setSelectedImage(null);
     setSelectedLocation(null);
-
-    await saveFirebaseCommunityPost(post);
   };
 
-  const handleLike = async (postId: string) => {
+  const handleLike = (postId: string) => {
     if (!user) return;
     
-    const matchedPost = localPosts.find(p => p.id === postId);
-    if (!matchedPost) return;
-
-    const likedBy = matchedPost.likedBy || [];
-    const isLiked = likedBy.includes(user.uid);
-    let updatedPost: CommunityPost;
-
-    if (isLiked) {
-      updatedPost = {
-        ...matchedPost,
-        likes: Math.max(0, matchedPost.likes - 1),
-        likedBy: likedBy.filter(id => id !== user.uid)
-      };
-    } else {
-      updatedPost = {
-        ...matchedPost,
-        likes: matchedPost.likes + 1,
-        likedBy: [...likedBy, user.uid]
-      };
-    }
-
-    await saveFirebaseCommunityPost(updatedPost);
+    const updatedPosts = localPosts.map(post => {
+      if (post.id === postId) {
+        const likedBy = post.likedBy || [];
+        const isLiked = likedBy.includes(user.uid);
+        
+        if (isLiked) {
+          return {
+            ...post,
+            likes: Math.max(0, post.likes - 1),
+            likedBy: likedBy.filter(id => id !== user.uid)
+          };
+        } else {
+          return {
+            ...post,
+            likes: post.likes + 1,
+            likedBy: [...likedBy, user.uid]
+          };
+        }
+      }
+      return post;
+    });
+    
+    setLocalPosts(updatedPosts);
+    localStorage.setItem('cleanpin_community_posts', JSON.stringify(updatedPosts));
   };
 
   const getInitials = (name?: string) => {
