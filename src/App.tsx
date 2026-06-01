@@ -333,8 +333,8 @@ export default function App() {
                     )}
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-base md:text-lg font-bold text-slate-800 truncate">{user?.displayName}</h3>
-                    <p className="text-xs text-muted-foreground font-medium">{user?.role === 'admin' ? 'System Administrator' : 'Elite Eco-Warrior'}</p>
+                    <h3 className="text-base md:text-lg font-bold text-slate-800 truncate">{user?.role === 'admin' ? 'System Administrator' : 'Elite Eco-Warrior'}</h3>
+                    <p className="text-xs text-muted-foreground font-medium">{user?.displayName}</p>
                   </div>
                 </div>
                 <div className="self-end sm:self-auto flex-shrink-0">
@@ -430,7 +430,7 @@ export default function App() {
         const selectedPin = posts.find(p => p.id === selectedPinId);
         
         return (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[78vh] min-h-[550px] overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[80vh] min-h-[600px]">
             {/* Left Panel: Pinned Areas Collection or Selected Pin Action Board (Takes 5 cols) */}
             <div className="lg:col-span-5 flex flex-col h-full bg-white rounded-3xl border border-border shadow-sm overflow-hidden min-h-0">
               
@@ -445,15 +445,15 @@ export default function App() {
                     className="flex flex-col h-full min-h-0"
                   >
                     {/* Header */}
-                    <div className="p-5 border-b border-muted bg-slate-50">
-                      <h2 className="font-display font-bold text-lg text-slate-850 flex items-center">
+                    <div className="p-6 border-b border-muted bg-slate-50">
+                      <h2 className="font-display font-bold text-lg text-slate-800 flex items-center">
                         <span className="mr-2">📁</span> Pinned Areas Collection
                       </h2>
                       <p className="text-xs text-muted-foreground mt-0.5">Explore reported spots and contribute validation feedback.</p>
                     </div>
 
                     {/* Filter controls */}
-                    <div className="p-4 border-b border-muted space-y-3 bg-white">
+                    <div className="p-6 border-b border-muted space-y-4 bg-white">
                       {/* Search */}
                       <div className="relative">
                         <input 
@@ -461,9 +461,9 @@ export default function App() {
                           placeholder="Search pinned areas, categories..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-primary/20 outline-none"
+                          className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-primary/20 outline-none"
                         />
-                        <span className="absolute left-3 top-2.5 text-slate-400 text-xs">🔍</span>
+                        <span className="absolute left-3 top-3 text-slate-400 text-xs">🔍</span>
                       </div>
 
                       {/* Rapid Status Filter Badges */}
@@ -484,7 +484,7 @@ export default function App() {
                               selectedStatusFilter === filter.id 
                                 ? filter.id === 'resolved' ? "bg-emerald-600 text-white shadow-sm" :
                                   filter.id === 'in-progress' ? "bg-orange-600 text-white shadow-sm" :
-                                  filter.id === 'pending' ? "bg-red-600 text-white shadow-sm" : "bg-slate-850 text-white shadow-sm"
+                                  filter.id === 'pending' ? "bg-red-600 text-white shadow-sm" : "bg-slate-800 text-white shadow-sm"
                                 : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                             )}
                           >
@@ -495,7 +495,7 @@ export default function App() {
                     </div>
 
                     {/* Scrollable list */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
                       {posts
                         .filter(post => {
                           const matchesQuery = post.description.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -522,9 +522,9 @@ export default function App() {
                                   setSelectedPinId(post.id);
                                   setMapFocusCenter([post.location.lat, post.location.lng]);
                                 }}
-                                className="p-4 rounded-2xl bg-[#f9fafb] border border-slate-100 hover:border-primary/20 hover:bg-primary/5 cursor-pointer group transition-all duration-200 flex flex-col"
+                                className="p-5 rounded-2xl bg-[#f9fafb] border border-slate-100 hover:border-primary/20 hover:bg-primary/5 cursor-pointer group transition-all duration-200 flex flex-col shadow-sm hover:shadow-md"
                               >
-                                <div className="flex items-start justify-between gap-2 mb-2">
+                                <div className="flex items-start justify-between gap-2 mb-3">
                                   <div className="flex items-center space-x-2">
                                     <span className={cn(
                                       "inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase",
@@ -542,7 +542,7 @@ export default function App() {
                                   </span>
                                 </div>
                                 
-                                <div className="flex gap-3 items-start">
+                                <div className="flex gap-4 items-start">
                                   {post.imageUrl && (
                                     <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-100 border border-slate-100 flex-shrink-0">
                                       <img src={post.imageUrl} alt="Trash spot" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 animate-in fade-in" />
@@ -552,14 +552,14 @@ export default function App() {
                                     <h4 className="text-xs font-bold text-slate-800 truncate group-hover:text-primary transition-colors">
                                       Posted by {post.userName}
                                     </h4>
-                                    <p className="text-[11px] text-slate-500 line-clamp-2 mt-0.5 leading-relaxed">
+                                    <p className="text-[11px] text-slate-500 line-clamp-2 mt-1 leading-relaxed">
                                       {post.description}
                                     </p>
                                   </div>
                                 </div>
 
                                 {post.location.address && (
-                                  <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center text-[10px] text-slate-450 font-bold uppercase tracking-tight">
+                                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center text-[10px] text-slate-450 font-bold uppercase tracking-tight">
                                     <span className="mr-1">📍</span> {post.location.address}
                                   </div>
                                 )}
@@ -584,7 +584,7 @@ export default function App() {
                     className="flex flex-col h-full min-h-0"
                   >
                     {/* Header */}
-                    <div className="p-5 border-b border-muted bg-slate-900 text-white flex items-center justify-between flex-shrink-0">
+                    <div className="p-6 border-b border-muted bg-slate-900 text-white flex items-center justify-between flex-shrink-0">
                       <div className="flex-1 min-w-0">
                         <button 
                           onClick={() => setSelectedPinId(null)}
@@ -607,16 +607,16 @@ export default function App() {
                     </div>
 
                     {/* Scrollable details & updates stream */}
-                    <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
                       {/* Active Trash details card */}
-                      <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-3">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center font-bold text-[9px] text-primary">
+                      <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 space-y-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-[10px] text-primary">
                             {selectedPin.userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                           </div>
                           <div>
-                            <p className="text-[11px] font-bold text-slate-800">{selectedPin.userName}</p>
-                            <p className="text-[9px] text-slate-450">Reporter</p>
+                            <p className="text-xs font-bold text-slate-800">{selectedPin.userName}</p>
+                            <p className="text-[10px] text-slate-450">Reporter</p>
                           </div>
                         </div>
 
@@ -630,7 +630,7 @@ export default function App() {
                           </div>
                         )}
 
-                        <div className="text-[10px] text-slate-500 font-bold bg-white p-2 rounded-lg border border-slate-100 flex items-center">
+                        <div className="text-[10px] text-slate-500 font-bold bg-white p-3 rounded-lg border border-slate-100 flex items-center">
                           <span className="mr-1.5">📍</span> Address: {selectedPin.location.address || `Coordinates (${selectedPin.location.lat.toFixed(4)}, ${selectedPin.location.lng.toFixed(4)})`}
                         </div>
                       </div>
@@ -642,7 +642,7 @@ export default function App() {
                         </h3>
 
                         {/* Submit verification form */}
-                        <div className="bg-white border-2 border-primary/10 p-4 rounded-2xl space-y-4 relative overflow-hidden">
+                        <div className="bg-white border-2 border-primary/10 p-6 rounded-2xl space-y-5 relative overflow-hidden">
                           <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-full" />
                           <div>
                             <h4 className="text-xs font-bold text-slate-800">Vote Cleanliness or Support Action</h4>
@@ -650,7 +650,7 @@ export default function App() {
                           </div>
 
                           {/* Mode Toggle Buttons */}
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-2 gap-3">
                             <button
                               type="button"
                               onClick={() => {
@@ -757,7 +757,7 @@ export default function App() {
                               <div key={item.id} className="p-3.5 rounded-xl border border-slate-100 bg-[#fbfbfb] text-slate-800 space-y-1.5 relative overflow-hidden">
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center space-x-1.5">
-                                    <span className="text-xs font-bold text-slate-850">{item.userName}</span>
+                                    <span className="text-xs font-bold text-slate-800">{item.userName}</span>
                                     <span className={cn(
                                       "text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider",
                                       item.type === 'confirm-cleaned' ? "bg-emerald-100 text-emerald-800" : "bg-orange-100 text-orange-900"
