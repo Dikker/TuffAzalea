@@ -346,7 +346,21 @@ export default function App() {
 
               {/* Map Preview */}
               <section className="bg-slate-100 rounded-2xl overflow-hidden shadow-inner border border-slate-200 relative h-[300px] sm:h-[400px] md:h-[500px]">
-                <Map markers={markers} />
+                <Map 
+                  markers={markers} 
+                  onMarkerSelect={(id) => {
+                    setSelectedPinId(id);
+                  }}
+                  onViewUpdates={(id) => {
+                    setActiveTab('map');
+                    setSelectedPinId(id);
+                    const clickedPost = posts.find(p => p.id === id);
+                    if (clickedPost) {
+                      setMapFocusCenter([clickedPost.location.lat, clickedPost.location.lng]);
+                    }
+                  }}
+                  selectedMarkerId={selectedPinId || undefined}
+                />
                 {user?.role !== 'admin' && (
                   <button 
                     onClick={() => setIsReportModalOpen(true)}
@@ -375,7 +389,13 @@ export default function App() {
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         key={post.id}
-                        className="p-3 rounded-xl bg-muted border border-border/50 group"
+                        onClick={() => {
+                          setActiveTab('map');
+                          setSelectedPinId(post.id);
+                          setMapFocusCenter([post.location.lat, post.location.lng]);
+                        }}
+                        className="p-3 rounded-xl bg-muted border border-border/50 group cursor-pointer hover:border-primary/40 hover:bg-primary/5 hover:shadow-sm transition-all duration-200"
+                        title="Click to view this report on the map"
                       >
                         <div className="flex items-center space-x-2 mb-2">
                           <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px] overflow-hidden">
@@ -386,16 +406,25 @@ export default function App() {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold text-slate-800 truncate">{post.userName}</p>
-                            <p className="text-[10px] text-muted-foreground">Just now</p>
+                            <p className="text-xs font-bold text-slate-800 truncate group-hover:text-primary transition-colors">{post.userName}</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {post.location.address?.split(',')[0]}
+                            </p>
                           </div>
                         </div>
                         <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed mb-2">{post.description}</p>
-                        <div className={cn(
-                          "inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase",
-                          post.status === 'verified' ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
-                        )}>
-                          {post.status}
+                        <div className="flex items-center justify-between">
+                          <div className={cn(
+                            "inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase",
+                            post.status === 'resolved' || post.status === 'verified' ? "bg-emerald-100 text-emerald-700" :
+                            post.status === 'in-progress' ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"
+                          )}>
+                            {post.status}
+                          </div>
+                          <span className="text-[10px] font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-0.5">
+                            <span>View Report</span>
+                            <span>➜</span>
+                          </span>
                         </div>
                       </motion.div>
                     ))

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Circle, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
 import { Search, Navigation, Layers } from 'lucide-react';
@@ -30,6 +30,7 @@ interface MapProps {
   selectable?: boolean;
   showHeatmap?: boolean;
   onMarkerSelect?: (id: string) => void;
+  onViewUpdates?: (id: string) => void;
   selectedMarkerId?: string;
 }
 
@@ -132,6 +133,84 @@ const MapEvents = ({ onLocationSelect }: { onLocationSelect?: (lat: number, lng:
   return null;
 };
 
+const MarkerWithPopup = ({ 
+  marker, 
+  customIcon, 
+  isSelected, 
+  onMarkerSelect, 
+  onViewUpdates 
+}: { 
+  marker: any; 
+  customIcon: any; 
+  isSelected: boolean; 
+  onMarkerSelect?: (id: string) => void; 
+  onViewUpdates?: (id: string) => void; 
+  key?: any;
+}) => {
+  const markerRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (isSelected && markerRef.current) {
+      const timer = setTimeout(() => {
+        markerRef.current.openPopup();
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [isSelected]);
+
+  return (
+    <Marker 
+      ref={markerRef}
+      position={[marker.lat, marker.lng]} 
+      icon={customIcon}
+      eventHandlers={{
+        click: () => {
+          if (onMarkerSelect) onMarkerSelect(marker.id);
+        }
+      }}
+    >
+      <Popup className="custom-popup">
+        <div className="p-3 min-w-[200px] text-slate-800">
+          {marker.imageUrl && (
+            <div className="relative h-28 w-full rounded-lg overflow-hidden mb-2 shadow-sm border border-slate-100">
+              <img src={marker.imageUrl} alt={marker.title} className="w-full h-full object-cover" />
+              <span className={cn(
+                "absolute top-2 right-2 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase text-white shadow-sm",
+                marker.status === 'resolved' || marker.status === 'verified' ? "bg-emerald-500" :
+                marker.status === 'in-progress' ? "bg-orange-500" : "bg-red-500"
+              )}>
+                {marker.status || 'pending'}
+              </span>
+            </div>
+          )}
+          <div className="flex items-center space-x-1 mb-1">
+            <span className="text-[9px] font-bold bg-secondary text-primary px-1.5 py-0.5 rounded uppercase">
+              {marker.category || 'waste'}
+            </span>
+          </div>
+          <h3 className="font-bold text-sm text-[#064e3b] tracking-tight">{marker.title}</h3>
+          <p className="text-xs text-slate-600 line-clamp-2 mt-1 leading-relaxed">{marker.description}</p>
+          
+          <button 
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onViewUpdates) {
+                onViewUpdates(marker.id);
+              } else if (onMarkerSelect) {
+                onMarkerSelect(marker.id);
+              }
+            }}
+            className="mt-3 w-full bg-slate-900 hover:bg-slate-800 text-white py-1.5 px-3 rounded-lg text-xs font-bold text-center transition-all flex items-center justify-center space-x-1 cursor-pointer"
+          >
+            <span>💬 View Pin Updates</span>
+          </button>
+        </div>
+      </Popup>
+    </Marker>
+  );
+};
+
 const Map: React.FC<MapProps> = ({ 
   center = DEFAULT_CENTER,
   markers = [],
@@ -139,6 +218,7 @@ const Map: React.FC<MapProps> = ({
   selectable = false,
   showHeatmap: initialShowHeatmap = false,
   onMarkerSelect,
+  onViewUpdates,
   selectedMarkerId
 }) => {
   const [mapCenter, setMapCenter] = useState<[number, number]>(center);
@@ -281,51 +361,14 @@ const Map: React.FC<MapProps> = ({
             const customIcon = getCustomIcon(marker.status || 'pending', isSelected);
 
             return (
-              <Marker 
-                key={marker.id} 
-                position={[marker.lat, marker.lng]} 
-                icon={customIcon}
-                eventHandlers={{
-                  click: () => {
-                    if (onMarkerSelect) onMarkerSelect(marker.id);
-                  }
-                }}
-              >
-                <Popup className="custom-popup">
-                  <div className="p-3 min-w-[200px] text-slate-800">
-                    {marker.imageUrl && (
-                      <div className="relative h-28 w-full rounded-lg overflow-hidden mb-2 shadow-sm border border-slate-100">
-                        <img src={marker.imageUrl} alt={marker.title} className="w-full h-full object-cover" />
-                        <span className={cn(
-                          "absolute top-2 right-2 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase text-white shadow-sm",
-                          marker.status === 'resolved' || marker.status === 'verified' ? "bg-emerald-500" :
-                          marker.status === 'in-progress' ? "bg-orange-500" : "bg-red-500"
-                        )}>
-                          {marker.status || 'pending'}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex items-center space-x-1 mb-1">
-                      <span className="text-[9px] font-bold bg-secondary text-primary px-1.5 py-0.5 rounded uppercase">
-                        {marker.category || 'waste'}
-                      </span>
-                    </div>
-                    <h3 className="font-bold text-sm text-[#064e3b] tracking-tight">{marker.title}</h3>
-                    <p className="text-xs text-slate-600 line-clamp-2 mt-1 leading-relaxed">{marker.description}</p>
-                    
-                    <button 
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (onMarkerSelect) onMarkerSelect(marker.id);
-                      }}
-                      className="mt-3 w-full bg-slate-900 hover:bg-slate-800 text-white py-1.5 px-3 rounded-lg text-xs font-bold text-center transition-all flex items-center justify-center space-x-1"
-                    >
-                      <span>💬 View Pin Updates</span>
-                    </button>
-                  </div>
-                </Popup>
-              </Marker>
+              <MarkerWithPopup
+                key={marker.id}
+                marker={marker}
+                customIcon={customIcon}
+                isSelected={isSelected}
+                onMarkerSelect={onMarkerSelect}
+                onViewUpdates={onViewUpdates}
+              />
             );
           })
         )}
