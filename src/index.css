@@ -23,6 +23,19 @@
   body {
     @apply bg-[#f0f9f6] text-[#1a2e25] font-sans antialiased;
   }
+  
+  /* Ensure all buttons, clickable roles, and custom icons have a pointer cursor */
+  button,
+  [role="button"],
+  .cursor-pointer,
+  .clickable-icon {
+    cursor: pointer !important;
+  }
+}
+
+/* Custom visual class for interactive icons with a subtle spring-scale effect */
+.clickable-icon {
+  @apply transition-transform duration-100 ease-out active:scale-95 text-slate-500 hover:text-primary;
 }
 
 /* Leaflet maps need an explicit height */
