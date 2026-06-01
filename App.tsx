@@ -349,6 +349,9 @@ export default function App() {
                 <Map 
                   markers={markers} 
                   onMarkerSelect={(id) => {
+                    setSelectedPinId(id);
+                  }}
+                  onViewUpdates={(id) => {
                     setActiveTab('map');
                     setSelectedPinId(id);
                     const clickedPost = posts.find(p => p.id === id);
