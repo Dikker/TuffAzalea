@@ -1,3 +1,13 @@
+export interface PinConfirm {
+  id: string;
+  userName: string;
+  userAvatar?: string;
+  type: 'confirm-cleaned' | 'suggest-action';
+  actionRecommended?: string; // what to do (e.g., "Install bins", "Contact Barangay", "Volunteers cleanup")
+  comment?: string;
+  createdAt: number;
+}
+
 export interface UserContribution {
   id: string;
   userId: string;
@@ -13,6 +23,7 @@ export interface UserContribution {
   };
   createdAt: number;
   status: 'pending' | 'in-progress' | 'resolved' | 'verified';
+  confirms?: PinConfirm[];
 }
 
 export interface UserProfile {

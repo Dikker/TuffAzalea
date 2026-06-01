@@ -21,6 +21,16 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [posts, setPosts] = useState<UserContribution[]>([]);
+  const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
+  const [mapFocusCenter, setMapFocusCenter] = useState<[number, number] | null>(null);
+  const [selectedMapCoords, setSelectedMapCoords] = useState<{lat: number, lng: number} | null>(null);
+  const [reportModalCoords, setReportModalCoords] = useState<{lat: number, lng: number} | null>(null);
+
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState('all');
+  const [coopType, setCoopType] = useState<'confirm-cleaned' | 'suggest-action'>('confirm-cleaned');
+  const [coopAction, setCoopAction] = useState('Install bigger bins');
+  const [coopComment, setCoopComment] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [user, setUser] = useState<UserProfile | null>(null);
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
@@ -31,6 +41,100 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [toast]);
+
+  // Load posts with high-fidelity Sampaloc mock data as backup
+  useEffect(() => {
+    const savedPosts = localStorage.getItem('cleanpin_locations');
+    if (savedPosts) {
+      try {
+        setPosts(JSON.parse(savedPosts));
+      } catch (e) {
+        console.error("Error parsing cleanpin locations", e);
+      }
+    } else {
+      const initialPosts: UserContribution[] = [
+        {
+          id: 'p-1',
+          userId: 'user-2',
+          userName: 'Maria Santos',
+          description: "Large pile of plastic trash bags and discarded wooden furniture sitting right beside the main G. Tuazon traffic flow. It's obstructing pedestrians and attracting stray animals.",
+          imageUrl: "https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?auto=format&fit=crop&q=80&w=800",
+          category: 'illegal-dumping',
+          location: { lat: 14.6135, lng: 121.0012, address: "G. Tuazon St, Sampaloc, Manila" },
+          createdAt: Date.now() - 1000 * 60 * 60 * 24 * 3, // 3 days ago
+          status: 'pending',
+          confirms: [
+            {
+              id: 'c-1',
+              userName: 'Kevin Ramos',
+              type: 'suggest-action',
+              actionRecommended: 'Contact Barangay Officer',
+              comment: "Spoke to the street sweepers. They said they need a larger dump truck here on Wednesday, since there is a regular buildup.",
+              createdAt: Date.now() - 1000 * 60 * 60 * 24 * 2
+            }
+          ]
+        },
+        {
+          id: 'p-2',
+          userId: 'user-1',
+          userName: 'Jose Gabriel',
+          description: "Commercial garbage bin has overflowed with take-out cartons and empty plastic beverage cups. It is starting to smell as it was soaked in rain.",
+          imageUrl: "https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&q=80&w=800",
+          category: 'missed-collection',
+          location: { lat: 14.6087, lng: 120.9895, address: "España Blvd, Sampaloc, Manila (Near UST walkway)" },
+          createdAt: Date.now() - 1000 * 60 * 60 * 12, // 12 hours ago
+          status: 'in-progress',
+          confirms: [
+            {
+              id: 'c-2',
+              userName: 'Maria Santos',
+              type: 'suggest-action',
+              actionRecommended: 'Install bigger bins',
+              comment: "This UST walkway gets heavy foot traffic. A regular bin isn't enough, we need a high-capacity segregated waste bin.",
+              createdAt: Date.now() - 1000 * 60 * 60 * 8
+            },
+            {
+              id: 'c-3',
+              userName: 'Admin Administrator',
+              type: 'suggest-action',
+              actionRecommended: 'Organize volunteer cleanup',
+              comment: "Assigned eco-volunteer squad for España cleanup this Friday. Join us at 8 AM!",
+              createdAt: Date.now() - 1000 * 60 * 60 * 4
+            }
+          ]
+        },
+        {
+          id: 'p-3',
+          userId: 'user-3',
+          userName: 'Kevin Ramos',
+          description: "Discarded fluorescent light tubes and electronic parts lying broken on the pavement. Risk of mercury inhalation and cuts for passing pedestrians.",
+          imageUrl: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?auto=format&fit=crop&q=80&w=800",
+          category: 'hazardous',
+          location: { lat: 14.6178, lng: 120.9922, address: "Lacson Ave corner Dimasalang, Sampaloc, Manila" },
+          createdAt: Date.now() - 1000 * 60 * 60 * 24 * 5, // 5 days ago
+          status: 'resolved',
+          confirms: [
+            {
+              id: 'c-4',
+              userName: 'Maria Santos',
+              type: 'confirm-cleaned',
+              comment: "Awesome! The barangay workers came with gloves and safety kits to pick up the broken hazardous tubes this morning. Area is clean and safe now!",
+              createdAt: Date.now() - 1000 * 60 * 60 * 12
+            }
+          ]
+        }
+      ];
+      setPosts(initialPosts);
+      localStorage.setItem('cleanpin_locations', JSON.stringify(initialPosts));
+    }
+  }, []);
+
+  // Sync posts to LocalStorage
+  useEffect(() => {
+    if (posts.length > 0) {
+      localStorage.setItem('cleanpin_locations', JSON.stringify(posts));
+    }
+  }, [posts]);
 
   useEffect(() => {
     // Check for existing session
@@ -106,13 +210,86 @@ export default function App() {
     setPosts(posts.filter(p => p.id !== id));
   };
 
+  const handleConfirmOrRecommend = (
+    pinId: string,
+    type: 'confirm-cleaned' | 'suggest-action',
+    actionRecommended?: string,
+    comment?: string
+  ) => {
+    if (!user) return;
+
+    const newConfirm = {
+      id: Math.random().toString(36).substr(2, 9),
+      userName: user.displayName,
+      type,
+      actionRecommended,
+      comment,
+      createdAt: Date.now()
+    };
+
+    const updatedPosts = posts.map(post => {
+      if (post.id === pinId) {
+        const existingConfirms = post.confirms || [];
+        
+        // Auto update status based on community feedback
+        let updatedStatus = post.status;
+        if (type === 'confirm-cleaned') {
+          updatedStatus = 'resolved'; // Mark as resolved/cleaned
+        } else if (type === 'suggest-action') {
+          updatedStatus = 'in-progress'; // Mark as in-progress / action-taken
+        }
+
+        return {
+          ...post,
+          status: updatedStatus,
+          confirms: [newConfirm, ...existingConfirms]
+        };
+      }
+      return post;
+    });
+
+    setPosts(updatedPosts);
+
+    // Reward the user with 15 XP points!
+    const updatedUser = {
+      ...user,
+      points: user.points + 15,
+      level: Math.floor((user.points + 15) / 100) + 1
+    };
+    setUser(updatedUser);
+    localStorage.setItem('cleanpin_session', JSON.stringify(updatedUser));
+
+    // Update in stored accounts too
+    const storedAccounts = JSON.parse(localStorage.getItem('cleanpin_accounts') || '[]');
+    const newAccounts = storedAccounts.map((a: any) => 
+      a.email.toLowerCase() === user.email.toLowerCase()
+        ? { ...a, points: updatedUser.points, level: updatedUser.level }
+        : a
+    );
+    localStorage.setItem('cleanpin_accounts', JSON.stringify(newAccounts));
+
+    setToast({
+      message: type === 'confirm-cleaned'
+        ? "Verification logged! Clutter confirmed cleaned. +15 Eco Points!"
+        : "Action advice submitted. Post status updated to In Progress! +15 Eco Points!",
+      type: 'success'
+    });
+  };
+
+  const handleNewPostFromCoords = (lat: number, lng: number) => {
+    setReportModalCoords({ lat, lng });
+    setIsReportModalOpen(true);
+  };
+
   const markers = posts.map(post => ({
     id: post.id,
     lat: post.location.lat,
     lng: post.location.lng,
     title: `Post by ${post.userName}`,
     description: post.description,
-    imageUrl: post.imageUrl
+    imageUrl: post.imageUrl,
+    category: post.category,
+    status: post.status
   }));
 
   if (!isLoggedIn) {
@@ -127,11 +304,11 @@ export default function App() {
             {/* Main Content Area */}
             <div className="lg:col-span-3 space-y-8 flex flex-col">
               {/* Introduction Section */}
-              <div className="bg-slate-900 rounded-[2rem] p-8 md:p-10 text-white relative overflow-hidden shadow-2xl">
+              <div className="bg-slate-900 rounded-2xl md:rounded-[2rem] p-6 sm:p-8 md:p-10 text-white relative overflow-hidden shadow-2xl">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl -mr-20 -mt-20" />
                 <div className="relative z-10 max-w-xl text-balance">
-                  <h1 className="text-4xl md:text-5xl font-display font-bold mb-4 tracking-tight leading-tight">Welcome to CleanPin, <span className="text-primary">{user?.displayName}.</span></h1>
-                  <p className="text-slate-300 text-sm md:text-base leading-relaxed mb-6">You're participating in a community-driven initiative to map and eliminate waste in Sampaloc, supporting SDG 11: Sustainable Cities.</p>
+                  <h1 className="text-2xl sm:text-3xl md:text-5xl font-display font-bold mb-4 tracking-tight leading-tight">Welcome to CleanPin, <span className="text-primary">{user?.displayName}.</span></h1>
+                  <p className="text-slate-300 text-xs sm:text-sm md:text-base leading-relaxed mb-6">You're participating in a community-driven initiative to map and eliminate waste in Sampaloc, supporting SDG 11: Sustainable Cities.</p>
                   <div className="flex flex-wrap gap-4">
                     <div className="flex items-center space-x-2 bg-white/10 px-3 py-1.5 rounded-lg border border-white/10">
                       <Target size={14} className="text-primary" />
@@ -146,36 +323,36 @@ export default function App() {
               </div>
 
               {/* Profile Summary Overlay */}
-              <div className="bg-white rounded-[2rem] p-6 flex items-center justify-between border border-border shadow-sm">
+              <div className="bg-white rounded-2xl md:rounded-[2rem] p-5 md:p-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between border border-border shadow-sm">
                 <div className="flex items-center space-x-4">
-                  <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center text-primary font-bold text-xl border border-primary/20 overflow-hidden shadow-sm">
+                  <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-secondary flex items-center justify-center text-primary font-bold text-lg md:text-xl border border-primary/20 overflow-hidden shadow-sm flex-shrink-0">
                     {user?.photoURL ? (
                       <img src={user.photoURL} alt={user.displayName} className="w-full h-full object-cover" />
                     ) : (
                       user?.displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
                     )}
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-800">{user?.displayName}</h3>
+                  <div className="min-w-0">
+                    <h3 className="text-base md:text-lg font-bold text-slate-800 truncate">{user?.displayName}</h3>
                     <p className="text-xs text-muted-foreground font-medium">{user?.role === 'admin' ? 'System Administrator' : 'Elite Eco-Warrior'}</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="inline-flex items-center px-4 py-2 bg-secondary/50 text-primary rounded-xl text-xs font-bold border border-primary/10">
+                <div className="self-end sm:self-auto flex-shrink-0">
+                  <div className="inline-flex items-center px-3 md:px-4 py-1.5 md:py-2 bg-secondary/50 text-primary rounded-xl text-[10px] md:text-xs font-bold border border-primary/10">
                     Level {user?.level} • {user?.points} Points
                   </div>
                 </div>
               </div>
 
               {/* Map Preview */}
-              <section className="bg-slate-100 rounded-2xl overflow-hidden shadow-inner border border-slate-200 relative min-h-[500px]">
+              <section className="bg-slate-100 rounded-2xl overflow-hidden shadow-inner border border-slate-200 relative h-[300px] sm:h-[400px] md:h-[500px]">
                 <Map markers={markers} />
                 {user?.role !== 'admin' && (
                   <button 
                     onClick={() => setIsReportModalOpen(true)}
-                    className="absolute bottom-6 right-6 z-[1010] bg-primary text-white px-8 py-4 rounded-full font-bold shadow-post hover:bg-primary-dark transition-all flex items-center space-x-2"
+                    className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 z-[1010] bg-primary text-white px-6 py-3 sm:px-8 sm:py-4 rounded-full font-bold shadow-post hover:bg-primary-dark transition-all flex items-center space-x-2 text-xs sm:text-sm"
                   >
-                    <Plus size={20} />
+                    <Plus size={16} />
                     <span>REPORT TRASH</span>
                   </button>
                 )}
@@ -249,12 +426,429 @@ export default function App() {
             </div>
           </div>
         );
-      case 'map':
+      case 'map': {
+        const selectedPin = posts.find(p => p.id === selectedPinId);
+        
         return (
-          <div className="h-[70vh] min-h-[500px] w-full bg-white rounded-3xl overflow-hidden border border-border shadow-sm">
-            <Map markers={markers} selectable={user?.role !== 'admin'} onLocationSelect={() => {}} />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[78vh] min-h-[550px] overflow-hidden">
+            {/* Left Panel: Pinned Areas Collection or Selected Pin Action Board (Takes 5 cols) */}
+            <div className="lg:col-span-5 flex flex-col h-full bg-white rounded-3xl border border-border shadow-sm overflow-hidden min-h-0">
+              
+              <AnimatePresence mode="wait">
+                {!selectedPin ? (
+                  // PINNED AREAS COLLECTION VIEW
+                  <motion.div 
+                    key="collection-list"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 10 }}
+                    className="flex flex-col h-full min-h-0"
+                  >
+                    {/* Header */}
+                    <div className="p-5 border-b border-muted bg-slate-50">
+                      <h2 className="font-display font-bold text-lg text-slate-850 flex items-center">
+                        <span className="mr-2">📁</span> Pinned Areas Collection
+                      </h2>
+                      <p className="text-xs text-muted-foreground mt-0.5">Explore reported spots and contribute validation feedback.</p>
+                    </div>
+
+                    {/* Filter controls */}
+                    <div className="p-4 border-b border-muted space-y-3 bg-white">
+                      {/* Search */}
+                      <div className="relative">
+                        <input 
+                          type="text"
+                          placeholder="Search pinned areas, categories..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-primary/20 outline-none"
+                        />
+                        <span className="absolute left-3 top-2.5 text-slate-400 text-xs">🔍</span>
+                      </div>
+
+                      {/* Rapid Status Filter Badges */}
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {[
+                          { id: 'all', label: 'All Pins', color: 'bg-slate-100 text-slate-600' },
+                          { id: 'pending', label: 'Pending 🔴', color: 'bg-red-50 text-red-600 border border-red-100' },
+                          { id: 'in-progress', label: 'In Progress 🟠', color: 'bg-orange-50 text-orange-600 border border-orange-100' },
+                          { id: 'resolved', label: 'Cleaned 🟢', color: 'bg-emerald-50 text-emerald-600 border border-emerald-100' }
+                        ].map((filter) => (
+                          <button
+                            key={filter.id}
+                            onClick={() => {
+                              setSelectedStatusFilter(filter.id);
+                            }}
+                            className={cn(
+                              "px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all relative",
+                              selectedStatusFilter === filter.id 
+                                ? filter.id === 'resolved' ? "bg-emerald-600 text-white shadow-sm" :
+                                  filter.id === 'in-progress' ? "bg-orange-600 text-white shadow-sm" :
+                                  filter.id === 'pending' ? "bg-red-600 text-white shadow-sm" : "bg-slate-850 text-white shadow-sm"
+                                : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                            )}
+                          >
+                            {filter.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Scrollable list */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                      {posts
+                        .filter(post => {
+                          const matchesQuery = post.description.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                               (post.location.address?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+                                               post.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                               post.category.toLowerCase().includes(searchQuery.toLowerCase());
+                          const matchesFilter = selectedStatusFilter === 'all' || post.status === selectedStatusFilter;
+                          return matchesQuery && matchesFilter;
+                        })
+                        .length > 0 ? (
+                          posts
+                            .filter(post => {
+                              const matchesQuery = post.description.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                                   (post.location.address?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+                                                   post.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                                   post.category.toLowerCase().includes(searchQuery.toLowerCase());
+                              const matchesFilter = selectedStatusFilter === 'all' || post.status === selectedStatusFilter;
+                              return matchesQuery && matchesFilter;
+                            })
+                            .map((post) => (
+                              <div
+                                key={post.id}
+                                onClick={() => {
+                                  setSelectedPinId(post.id);
+                                  setMapFocusCenter([post.location.lat, post.location.lng]);
+                                }}
+                                className="p-4 rounded-2xl bg-[#f9fafb] border border-slate-100 hover:border-primary/20 hover:bg-primary/5 cursor-pointer group transition-all duration-200 flex flex-col"
+                              >
+                                <div className="flex items-start justify-between gap-2 mb-2">
+                                  <div className="flex items-center space-x-2">
+                                    <span className={cn(
+                                      "inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase",
+                                      post.status === 'resolved' || post.status === 'verified' ? "bg-emerald-100 text-emerald-800" :
+                                      post.status === 'in-progress' ? "bg-orange-100 text-orange-850" : "bg-red-100 text-red-800"
+                                    )}>
+                                      {post.status || 'pending'}
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+                                      {post.category}
+                                    </span>
+                                  </div>
+                                  <span className="text-[9px] text-slate-400 font-medium">
+                                    {new Date(post.createdAt).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}
+                                  </span>
+                                </div>
+                                
+                                <div className="flex gap-3 items-start">
+                                  {post.imageUrl && (
+                                    <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-100 border border-slate-100 flex-shrink-0">
+                                      <img src={post.imageUrl} alt="Trash spot" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 animate-in fade-in" />
+                                    </div>
+                                  )}
+                                  <div className="min-w-0 flex-1">
+                                    <h4 className="text-xs font-bold text-slate-800 truncate group-hover:text-primary transition-colors">
+                                      Posted by {post.userName}
+                                    </h4>
+                                    <p className="text-[11px] text-slate-500 line-clamp-2 mt-0.5 leading-relaxed">
+                                      {post.description}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {post.location.address && (
+                                  <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center text-[10px] text-slate-450 font-bold uppercase tracking-tight">
+                                    <span className="mr-1">📍</span> {post.location.address}
+                                  </div>
+                                )}
+                              </div>
+                            ))
+                        ) : (
+                          <div className="py-12 text-center flex flex-col items-center">
+                            <span className="text-3xl mb-1.5">🔭</span>
+                            <p className="text-xs font-bold text-slate-400">No matching pins found</p>
+                            <p className="text-[10px] text-slate-400 mt-1">Try resetting filters or typing another query.</p>
+                          </div>
+                        )}
+                    </div>
+                  </motion.div>
+                ) : (
+                  // COMMUNITY COLLABORATION BOARD VIEW
+                  <motion.div
+                    key="coop-board"
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    className="flex flex-col h-full min-h-0"
+                  >
+                    {/* Header */}
+                    <div className="p-5 border-b border-muted bg-slate-900 text-white flex items-center justify-between flex-shrink-0">
+                      <div className="flex-1 min-w-0">
+                        <button 
+                          onClick={() => setSelectedPinId(null)}
+                          className="text-xs text-primary font-bold hover:underline mb-1 flex items-center space-x-1"
+                        >
+                          <span>← Back to Collection</span>
+                        </button>
+                        <h3 className="font-display font-bold text-base truncate">Collaborate on Cleanup</h3>
+                      </div>
+                      <span className={cn(
+                        "text-[10px] font-black uppercase px-2.5 py-1 rounded-full border shadow-sm",
+                        selectedPin.status === 'resolved' || selectedPin.status === 'verified' 
+                          ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20" 
+                          : selectedPin.status === 'in-progress' 
+                          ? "bg-orange-500/15 text-orange-400 border-orange-500/20" 
+                          : "bg-red-500/15 text-red-400 border-red-500/20"
+                      )}>
+                        {selectedPin.status || 'pending'}
+                      </span>
+                    </div>
+
+                    {/* Scrollable details & updates stream */}
+                    <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
+                      {/* Active Trash details card */}
+                      <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-3">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center font-bold text-[9px] text-primary">
+                            {selectedPin.userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="text-[11px] font-bold text-slate-800">{selectedPin.userName}</p>
+                            <p className="text-[9px] text-slate-450">Reporter</p>
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-slate-600 leading-relaxed italic border-l-2 border-primary/30 pl-3">
+                          "{selectedPin.description}"
+                        </p>
+
+                        {selectedPin.imageUrl && (
+                          <div className="rounded-xl overflow-hidden aspect-[16/9] border border-slate-200">
+                            <img src={selectedPin.imageUrl} alt="Trash details" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+
+                        <div className="text-[10px] text-slate-500 font-bold bg-white p-2 rounded-lg border border-slate-100 flex items-center">
+                          <span className="mr-1.5">📍</span> Address: {selectedPin.location.address || `Coordinates (${selectedPin.location.lat.toFixed(4)}, ${selectedPin.location.lng.toFixed(4)})`}
+                        </div>
+                      </div>
+
+                      {/* Collaborative Action Board */}
+                      <div className="space-y-4">
+                        <h3 className="text-xs font-bold text-slate-550 uppercase tracking-wider flex items-center">
+                          <span>📢</span> <span className="ml-1.5 font-display font-black text-slate-800">Community Updates / Advice ({selectedPin.confirms?.length || 0})</span>
+                        </h3>
+
+                        {/* Submit verification form */}
+                        <div className="bg-white border-2 border-primary/10 p-4 rounded-2xl space-y-4 relative overflow-hidden">
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-full" />
+                          <div>
+                            <h4 className="text-xs font-bold text-slate-800">Vote Cleanliness or Support Action</h4>
+                            <p className="text-[10px] text-slate-400">Collaborate with other sweepers so everyone knows what is needed.</p>
+                          </div>
+
+                          {/* Mode Toggle Buttons */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCoopType('confirm-cleaned');
+                                setCoopAction('');
+                              }}
+                              className={cn(
+                                "py-2 px-3 rounded-xl text-[10px] font-extrabold flex items-center justify-center space-x-1.5 transition-all border",
+                                coopType === 'confirm-cleaned'
+                                  ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                                  : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                              )}
+                            >
+                              <span>✅</span>
+                              <span>Confirm Cleaned</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCoopType('suggest-action');
+                                setCoopAction('Install bigger bins');
+                              }}
+                              className={cn(
+                                "py-2 px-3 rounded-xl text-[10px] font-extrabold flex items-center justify-center space-x-1.5 transition-all border",
+                                coopType === 'suggest-action'
+                                  ? "bg-orange-600 text-white border-orange-600 shadow-sm"
+                                  : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                              )}
+                            >
+                              <span>⚠️</span>
+                              <span>Recommend Action</span>
+                            </button>
+                          </div>
+
+                          {coopType === 'suggest-action' && (
+                            <div className="space-y-1.5 animate-in fade-in duration-250">
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Recommended Support Action</label>
+                              <div className="grid grid-cols-2 gap-1.5">
+                                {[
+                                  'Install bigger bins',
+                                  'Organize volunteer cleanup',
+                                  'Contact Barangay Officer',
+                                  'Post warning signs'
+                                ].map((action) => (
+                                  <button
+                                    key={action}
+                                    type="button"
+                                    onClick={() => setCoopAction(action)}
+                                    className={cn(
+                                      "px-2 py-1.5 text-[9px] font-extrabold rounded-lg border text-left transition-all",
+                                      coopAction === action 
+                                        ? "bg-orange-100 border-orange-300 text-orange-900 shadow-sm"
+                                        : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                                    )}
+                                  >
+                                    {action === 'Install bigger bins' ? '🗑️ ' :
+                                     action === 'Organize volunteer cleanup' ? '🧹 ' :
+                                     action === 'Contact Barangay Officer' ? '📞 ' : '🚫 '} 
+                                    {action}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Share Update Notes</label>
+                            <textarea
+                              rows={2}
+                              value={coopComment}
+                              onChange={(e) => setCoopComment(e.target.value)}
+                              placeholder={coopType === 'confirm-cleaned' 
+                                ? "Provide extra confirmation details (e.g. Area was sweeped, garbage truck finally collected it this morning...)" 
+                                : "Give advice or details for volunteers (e.g. Needs 3-4 volunteers with heavy trash bags...)"}
+                              className="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none resize-none"
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleConfirmOrRecommend(
+                                selectedPin.id,
+                                coopType,
+                                coopType === 'suggest-action' ? coopAction : undefined,
+                                coopComment.trim() || undefined
+                              );
+                              setCoopComment('');
+                            }}
+                            className={cn(
+                              "w-full py-2.5 rounded-xl text-xs font-bold text-white shadow-md active:scale-95 transition-all text-center flex items-center justify-center space-x-1.5",
+                              coopType === 'confirm-cleaned' ? "bg-emerald-600 hover:bg-emerald-700" : "bg-orange-600 hover:bg-orange-700"
+                            )}
+                          >
+                            <span>🚀</span>
+                            <span>SUBMIT PIN CONFIRM (+15 Eco Points)</span>
+                          </button>
+                        </div>
+
+                        {/* Stream of previous updates */}
+                        <div className="space-y-2.5">
+                          {selectedPin.confirms && selectedPin.confirms.length > 0 ? (
+                            selectedPin.confirms.map((item) => (
+                              <div key={item.id} className="p-3.5 rounded-xl border border-slate-100 bg-[#fbfbfb] text-slate-800 space-y-1.5 relative overflow-hidden">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-1.5">
+                                    <span className="text-xs font-bold text-slate-850">{item.userName}</span>
+                                    <span className={cn(
+                                      "text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider",
+                                      item.type === 'confirm-cleaned' ? "bg-emerald-100 text-emerald-800" : "bg-orange-100 text-orange-900"
+                                    )}>
+                                      {item.type === 'confirm-cleaned' ? 'Verified Cleaned' : 'Action Advice'}
+                                    </span>
+                                  </div>
+                                  <span className="text-[9px] text-slate-400 font-medium font-mono">
+                                    Just now
+                                  </span>
+                                </div>
+
+                                {item.actionRecommended && (
+                                  <p className="text-[10px] font-bold text-orange-800 bg-orange-50 px-2 py-1 rounded w-fit inline-flex items-center">
+                                    <span className="mr-1">🎯</span> Action Advised: {item.actionRecommended}
+                                  </p>
+                                )}
+
+                                {item.comment && (
+                                  <p className="text-xs text-slate-600 leading-relaxed italic pl-1.5 border-l border-slate-200">
+                                    "{item.comment}"
+                                  </p>
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="py-6 text-center text-[11px] text-slate-400 font-medium">
+                              No updates or recommendations logged for this pin. Be the first to advise what to do!
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Right Panel: The Interactive Map (Takes 7 cols) */}
+            <div className="lg:col-span-7 h-full bg-white rounded-3xl overflow-hidden border border-border shadow-sm flex flex-col relative min-h-[350px] lg:min-h-0">
+              <div className="flex-1 relative">
+                <Map 
+                  center={mapFocusCenter || undefined}
+                  markers={markers} 
+                  selectable={user?.role !== 'admin'} 
+                  onLocationSelect={(lat, lng) => {
+                    setSelectedMapCoords({ lat, lng });
+                  }} 
+                  onMarkerSelect={(id) => {
+                    setSelectedPinId(id);
+                    const clickedPost = posts.find(p => p.id === id);
+                    if (clickedPost) {
+                      setMapFocusCenter([clickedPost.location.lat, clickedPost.location.lng]);
+                    }
+                  }}
+                  selectedMarkerId={selectedPinId || undefined}
+                />
+
+                {/* Quick Map Overlay for active selected target coordinates */}
+                {selectedMapCoords && user?.role !== 'admin' && (
+                  <div className="absolute top-16 left-4 right-4 z-[1002] bg-slate-900/95 text-white p-3.5 rounded-2xl shadow-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between border border-white/10 gap-2.5 animate-in fade-in slide-in-from-top-4 duration-300">
+                    <div>
+                      <p className="text-xs font-black text-primary tracking-widest uppercase mb-0.5">Target Map Coordinate Selected</p>
+                      <p className="text-[10px] text-slate-300 font-mono">
+                        Latitude: {selectedMapCoords.lat.toFixed(5)} • Longitude: {selectedMapCoords.lng.toFixed(5)}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => {
+                          handleNewPostFromCoords(selectedMapCoords.lat, selectedMapCoords.lng);
+                          setSelectedMapCoords(null);
+                        }}
+                        className="bg-primary text-white font-bold text-xs py-2 px-3.5 rounded-xl hover:bg-primary-dark transition-all shadow-post"
+                      >
+                        📌 REPORT WASTE HERE (+25 Points)
+                      </button>
+                      <button 
+                        onClick={() => setSelectedMapCoords(null)}
+                        className="text-slate-400 hover:text-white text-xs font-bold p-1 bg-white/10 rounded-lg transition-colors"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         );
+      }
       case 'performance':
         return <Performance user={user} />;
       case 'community':
@@ -271,7 +865,7 @@ export default function App() {
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col md:flex-row bg-white font-sans selection:bg-primary/20 selection:text-primary overflow-hidden">
+    <div className="fixed inset-0 flex flex-col-reverse md:flex-row bg-white font-sans selection:bg-primary/20 selection:text-primary overflow-hidden">
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
@@ -283,7 +877,7 @@ export default function App() {
         <Header title="CleanPin" user={user} />
         
         <div className="flex-1 overflow-y-auto custom-scrollbar overflow-x-hidden">
-          <div className="p-4 md:p-8 lg:p-12 pb-32 md:pb-8 max-w-screen-2xl mx-auto">
+          <div className="p-4 md:p-8 lg:p-12 pb-8 max-w-screen-2xl mx-auto">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -301,9 +895,14 @@ export default function App() {
 
       <ReportModal 
         isOpen={isReportModalOpen} 
-        onClose={() => setIsReportModalOpen(false)} 
+        onClose={() => {
+          setIsReportModalOpen(false);
+          setReportModalCoords(null);
+        }} 
         onSubmit={handleNewPost}
         posts={posts}
+        initialLat={reportModalCoords?.lat}
+        initialLng={reportModalCoords?.lng}
       />
 
       {/* Toast Notification */}

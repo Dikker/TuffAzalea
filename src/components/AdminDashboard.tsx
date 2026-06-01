@@ -174,11 +174,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ posts, onStatusUpdate, 
           <h1 className="text-2xl font-display font-bold text-slate-800">Admin Control Center</h1>
           <p className="text-xs text-muted-foreground mt-1">Manage users, moderate reports, and track system activities.</p>
         </div>
-        <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+        <div className="flex overflow-x-auto whitespace-nowrap scrollbar-none bg-slate-100 p-1 rounded-xl border border-slate-200 max-w-full md:overflow-visible">
           <button 
             onClick={() => setActiveTab('overview')}
             className={cn(
-              "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center space-x-2",
+              "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center space-x-2 flex-shrink-0",
               activeTab === 'overview' ? "bg-white text-primary shadow-sm" : "text-slate-500 hover:text-slate-700"
             )}
           >
@@ -187,7 +187,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ posts, onStatusUpdate, 
           <button 
             onClick={() => setActiveTab('moderation')}
             className={cn(
-              "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center space-x-2",
+              "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center space-x-2 flex-shrink-0",
               activeTab === 'moderation' ? "bg-white text-primary shadow-sm" : "text-slate-500 hover:text-slate-700"
             )}
           >
@@ -196,7 +196,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ posts, onStatusUpdate, 
           <button 
             onClick={() => setActiveTab('users')}
             className={cn(
-              "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center space-x-2",
+              "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center space-x-2 flex-shrink-0",
               activeTab === 'users' ? "bg-white text-primary shadow-sm" : "text-slate-500 hover:text-slate-700"
             )}
           >
@@ -205,7 +205,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ posts, onStatusUpdate, 
           <button 
             onClick={() => setActiveTab('logs')}
             className={cn(
-              "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center space-x-2",
+              "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center space-x-2 flex-shrink-0",
               activeTab === 'logs' ? "bg-white text-primary shadow-sm" : "text-slate-500 hover:text-slate-700"
             )}
           >

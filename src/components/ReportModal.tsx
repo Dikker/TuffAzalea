@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Camera, MapPin, X, Upload, Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
 import { cn } from '../lib/utils';
 import Map from './Map';
@@ -10,9 +10,11 @@ interface ReportModalProps {
   onClose: () => void;
   onSubmit: (data: any) => void;
   posts: UserContribution[];
+  initialLat?: number;
+  initialLng?: number;
 }
 
-const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, onSubmit, posts }) => {
+const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, onSubmit, posts, initialLat, initialLng }) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
@@ -27,6 +29,16 @@ const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, onSubmit, po
   const [success, setSuccess] = useState(false);
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormData(prev => ({
+        ...prev,
+        lat: initialLat || 14.5995,
+        lng: initialLng || 120.9842
+      }));
+    }
+  }, [isOpen, initialLat, initialLng]);
 
   if (!isOpen) return null;
 

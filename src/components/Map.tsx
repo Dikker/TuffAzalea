@@ -23,15 +23,101 @@ interface MapProps {
     title: string;
     description: string;
     imageUrl?: string;
+    category?: string;
+    status?: string;
   }>;
   onLocationSelect?: (lat: number, lng: number) => void;
   selectable?: boolean;
   showHeatmap?: boolean;
+  onMarkerSelect?: (id: string) => void;
+  selectedMarkerId?: string;
 }
+
+const DEFAULT_CENTER: [number, number] = [14.5995, 120.9842]; // Manila default
+
+const iconCache: Record<string, any> = {};
+
+const getCustomIcon = (status: string, isSelected: boolean) => {
+  const cacheKey = `${status}-${isSelected ? 'selected' : 'normal'}`;
+  if (iconCache[cacheKey]) {
+    return iconCache[cacheKey];
+  }
+
+  let color = '#ef4444'; // default pending red
+  if (status === 'resolved' || status === 'verified') {
+    color = '#10b981'; // green
+  } else if (status === 'in-progress') {
+    color = '#f97316'; // orange
+  }
+
+  const size = isSelected ? 36 : 32;
+  const pinSize = isSelected ? 36 : 32;
+  const innerSize = isSelected ? 12 : 10;
+  const innerOffset = isSelected ? 12 : 11;
+  const borderStyle = isSelected ? '3px solid #ffffff' : '2px solid #ffffff';
+  const shadowStyle = isSelected ? '0 6px 12px rgba(0,0,0,0.45)' : '0 4px 6px rgba(0,0,0,0.3)';
+
+  const pulseHtml = isSelected ? `
+    <div style="
+      position: absolute;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: ${color};
+      opacity: 0.25;
+      animation: pin-pulse 1.8s infinite ease-out;
+      top: -10px;
+      left: -10px;
+      pointer-events: none;
+    "></div>
+  ` : '';
+
+  const html = `
+    <div style="position: relative; display: flex; align-items: center; justify-content: center; width: ${size}px; height: ${size}px;">
+      ${pulseHtml}
+      <div style="
+        position: absolute;
+        width: ${pinSize}px;
+        height: ${pinSize}px;
+        border-radius: 50% 50% 50% 0;
+        background: ${color};
+        transform: rotate(-135deg);
+        box-shadow: ${shadowStyle};
+        border: ${borderStyle};
+        transition: all 0.2s ease-in-out;
+      "></div>
+      <div style="
+        position: absolute;
+        width: ${innerSize}px;
+        height: ${innerSize}px;
+        border-radius: 50%;
+        background: #ffffff;
+        top: ${innerOffset}px;
+        left: ${innerOffset}px;
+      "></div>
+    </div>
+  `;
+
+  const icon = L.divIcon({
+    html,
+    className: `custom-div-icon${isSelected ? ' selected-marker' : ''}`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size],
+    popupAnchor: [0, -size],
+  });
+
+  iconCache[cacheKey] = icon;
+  return icon;
+};
 
 const ChangeView = ({ center, zoom }: { center: [number, number], zoom: number }) => {
   const map = useMap();
-  map.setView(center, zoom);
+  const lat = center[0];
+  const lng = center[1];
+
+  useEffect(() => {
+    map.setView([lat, lng], zoom);
+  }, [lat, lng, zoom, map]);
   return null;
 };
 
@@ -47,16 +133,34 @@ const MapEvents = ({ onLocationSelect }: { onLocationSelect?: (lat: number, lng:
 };
 
 const Map: React.FC<MapProps> = ({ 
-  center = [14.5995, 120.9842], // Manila default
+  center = DEFAULT_CENTER,
   markers = [],
   onLocationSelect,
   selectable = false,
-  showHeatmap: initialShowHeatmap = false
+  showHeatmap: initialShowHeatmap = false,
+  onMarkerSelect,
+  selectedMarkerId
 }) => {
   const [mapCenter, setMapCenter] = useState<[number, number]>(center);
+  const [mapZoom, setMapZoom] = useState<number>(13);
   const [selectedLocation, setSelectedLocation] = useState<[number, number] | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isHeatmapOn, setIsHeatmapOn] = useState(initialShowHeatmap);
+
+  const centerLat = center?.[0];
+  const centerLng = center?.[1];
+
+  useEffect(() => {
+    if (centerLat !== undefined && centerLng !== undefined) {
+      setMapCenter([centerLat, centerLng]);
+      // Use wider zoom on initial/default Manila, tighter zoom on real spots
+      if (centerLat === DEFAULT_CENTER[0] && centerLng === DEFAULT_CENTER[1]) {
+        setMapZoom(13);
+      } else {
+        setMapZoom(15);
+      }
+    }
+  }, [centerLat, centerLng]);
 
   const handleLocateUser = () => {
     if (navigator.geolocation) {
@@ -64,6 +168,7 @@ const Map: React.FC<MapProps> = ({
         (position) => {
           const { latitude, longitude } = position.coords;
           setMapCenter([latitude, longitude]);
+          setMapZoom(15);
           if (selectable) {
             setSelectedLocation([latitude, longitude]);
             if (onLocationSelect) onLocationSelect(latitude, longitude);
@@ -95,6 +200,7 @@ const Map: React.FC<MapProps> = ({
         
         // Update both center and map view
         setMapCenter([newLat, newLng]);
+        setMapZoom(15);
         
         // Extract a clean name (e.g., "Sampaloc" instead of the full address)
         const parts = display_name.split(',');
@@ -121,13 +227,34 @@ const Map: React.FC<MapProps> = ({
 
   return (
     <div className="relative w-full h-full rounded-xl overflow-hidden shadow-inner bg-slate-100 border border-slate-200">
+      <style>{`
+        @keyframes pin-pulse {
+          0% {
+            transform: scale(0.6);
+            opacity: 0.5;
+          }
+          100% {
+            transform: scale(1.4);
+            opacity: 0;
+          }
+        }
+        .custom-popup .leaflet-popup-content-wrapper {
+          border-radius: 1rem;
+          padding: 0;
+          overflow: hidden;
+        }
+        .custom-popup .leaflet-popup-content {
+          margin: 0;
+        }
+      `}</style>
       <MapContainer 
         center={mapCenter} 
-        zoom={13} 
+        zoom={mapZoom} 
         className="w-full h-full"
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
       >
+        <ChangeView center={mapCenter} zoom={mapZoom} />
         <ZoomControl position="bottomleft" />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -149,19 +276,58 @@ const Map: React.FC<MapProps> = ({
             />
           ))
         ) : (
-          markers.map((marker) => (
-            <Marker key={marker.id} position={[marker.lat, marker.lng]}>
-              <Popup className="custom-popup">
-                <div className="p-1 min-w-[150px]">
-                  {marker.imageUrl && (
-                    <img src={marker.imageUrl} alt={marker.title} className="w-full h-24 object-cover rounded mb-2 shadow-sm" />
-                  )}
-                  <h3 className="font-bold text-sm text-primary">{marker.title}</h3>
-                  <p className="text-xs text-slate-600 line-clamp-2">{marker.description}</p>
-                </div>
-              </Popup>
-            </Marker>
-          ))
+          markers.map((marker) => {
+            const isSelected = selectedMarkerId === marker.id;
+            const customIcon = getCustomIcon(marker.status || 'pending', isSelected);
+
+            return (
+              <Marker 
+                key={marker.id} 
+                position={[marker.lat, marker.lng]} 
+                icon={customIcon}
+                eventHandlers={{
+                  click: () => {
+                    if (onMarkerSelect) onMarkerSelect(marker.id);
+                  }
+                }}
+              >
+                <Popup className="custom-popup">
+                  <div className="p-3 min-w-[200px] text-slate-800">
+                    {marker.imageUrl && (
+                      <div className="relative h-28 w-full rounded-lg overflow-hidden mb-2 shadow-sm border border-slate-100">
+                        <img src={marker.imageUrl} alt={marker.title} className="w-full h-full object-cover" />
+                        <span className={cn(
+                          "absolute top-2 right-2 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase text-white shadow-sm",
+                          marker.status === 'resolved' || marker.status === 'verified' ? "bg-emerald-500" :
+                          marker.status === 'in-progress' ? "bg-orange-500" : "bg-red-500"
+                        )}>
+                          {marker.status || 'pending'}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center space-x-1 mb-1">
+                      <span className="text-[9px] font-bold bg-secondary text-primary px-1.5 py-0.5 rounded uppercase">
+                        {marker.category || 'waste'}
+                      </span>
+                    </div>
+                    <h3 className="font-bold text-sm text-[#064e3b] tracking-tight">{marker.title}</h3>
+                    <p className="text-xs text-slate-600 line-clamp-2 mt-1 leading-relaxed">{marker.description}</p>
+                    
+                    <button 
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onMarkerSelect) onMarkerSelect(marker.id);
+                      }}
+                      className="mt-3 w-full bg-slate-900 hover:bg-slate-800 text-white py-1.5 px-3 rounded-lg text-xs font-bold text-center transition-all flex items-center justify-center space-x-1"
+                    >
+                      <span>💬 View Pin Updates</span>
+                    </button>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })
         )}
 
         {selectedLocation && selectable && (
@@ -172,8 +338,6 @@ const Map: React.FC<MapProps> = ({
           setSelectedLocation([lat, lng]);
           onLocationSelect?.(lat, lng);
         }} />}
-        
-        <ChangeView center={mapCenter} zoom={13} />
       </MapContainer>
 
       {/* Controls Overlay */}

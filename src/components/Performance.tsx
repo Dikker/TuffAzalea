@@ -75,13 +75,13 @@ const Performance: React.FC<PerformanceProps> = ({ user }) => {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, i) => (
-          <div key={i} className="bg-white p-5 rounded-2xl shadow-sm border border-border flex items-center space-x-4">
-            <div className={`p-3 rounded-xl ${stat.bg} ${stat.color} border border-current/10`}>
-              <stat.icon size={22} />
+          <div key={i} className="bg-white p-3 sm:p-5 rounded-2xl shadow-sm border border-border flex items-center space-x-2.5 sm:space-x-4 min-w-0">
+            <div className={`p-2 sm:p-3 rounded-xl ${stat.bg} ${stat.color} border border-current/10 flex-shrink-0`}>
+              <stat.icon size={18} className="sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">{stat.label}</p>
-              <p className="text-xl font-display font-bold text-slate-800">{stat.value}</p>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1 truncate">{stat.label}</p>
+              <p className="text-base sm:text-xl font-display font-bold text-slate-800">{stat.value}</p>
             </div>
           </div>
         ))}

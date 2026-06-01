@@ -29,7 +29,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogo
   ].filter(item => item.visible);
 
   return (
-    <div className="w-full md:w-[80px] h-16 md:h-full bg-white border-t md:border-t-0 md:border-r border-border flex flex-row md:flex-col items-center justify-around md:justify-start py-0 md:py-6 shadow-lg md:shadow-sm z-[2005] fixed bottom-0 md:relative">
+    <div className="w-full md:w-[80px] h-16 md:h-full bg-white border-t md:border-t-0 md:border-r border-border flex flex-row md:flex-col items-center justify-around md:justify-start py-0 md:py-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] md:shadow-sm z-[2005] relative flex-shrink-0">
       <div className="hidden md:flex mb-10 w-12 h-12 overflow-hidden rounded-xl items-center justify-center p-1 uppercase">
         <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
       </div>
