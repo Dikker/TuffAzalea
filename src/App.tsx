@@ -15,6 +15,8 @@ import { Plus, Target, Users } from 'lucide-react';
 import { UserContribution, UserProfile } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
+import { db, saveFirebaseUser, saveFirebaseContribution, deleteFirebaseContribution } from './lib/firebase';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -42,102 +44,102 @@ export default function App() {
     }
   }, [toast]);
 
-  // Load posts with high-fidelity Sampaloc mock data as backup
+  // Real-time synchronization of reported pins from Firestore contributions collection
   useEffect(() => {
-    const savedPosts = localStorage.getItem('cleanpin_locations');
-    if (savedPosts) {
-      try {
-        setPosts(JSON.parse(savedPosts));
-      } catch (e) {
-        console.error("Error parsing cleanpin locations", e);
-      }
-    } else {
-      const initialPosts: UserContribution[] = [
-        {
-          id: 'p-1',
-          userId: 'user-2',
-          userName: 'Maria Santos',
-          description: "Large pile of plastic trash bags and discarded wooden furniture sitting right beside the main G. Tuazon traffic flow. It's obstructing pedestrians and attracting stray animals.",
-          imageUrl: "https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?auto=format&fit=crop&q=80&w=800",
-          category: 'illegal-dumping',
-          location: { lat: 14.6135, lng: 121.0012, address: "G. Tuazon St, Sampaloc, Manila" },
-          createdAt: Date.now() - 1000 * 60 * 60 * 24 * 3, // 3 days ago
-          status: 'pending',
-          confirms: [
-            {
-              id: 'c-1',
-              userName: 'Kevin Ramos',
-              type: 'suggest-action',
-              actionRecommended: 'Contact Barangay Officer',
-              comment: "Spoke to the street sweepers. They said they need a larger dump truck here on Wednesday, since there is a regular buildup.",
-              createdAt: Date.now() - 1000 * 60 * 60 * 24 * 2
-            }
-          ]
-        },
-        {
-          id: 'p-2',
-          userId: 'user-1',
-          userName: 'Jose Gabriel',
-          description: "Commercial garbage bin has overflowed with take-out cartons and empty plastic beverage cups. It is starting to smell as it was soaked in rain.",
-          imageUrl: "https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&q=80&w=800",
-          category: 'missed-collection',
-          location: { lat: 14.6087, lng: 120.9895, address: "España Blvd, Sampaloc, Manila (Near UST walkway)" },
-          createdAt: Date.now() - 1000 * 60 * 60 * 12, // 12 hours ago
-          status: 'in-progress',
-          confirms: [
-            {
-              id: 'c-2',
-              userName: 'Maria Santos',
-              type: 'suggest-action',
-              actionRecommended: 'Install bigger bins',
-              comment: "This UST walkway gets heavy foot traffic. A regular bin isn't enough, we need a high-capacity segregated waste bin.",
-              createdAt: Date.now() - 1000 * 60 * 60 * 8
-            },
-            {
-              id: 'c-3',
-              userName: 'Admin Administrator',
-              type: 'suggest-action',
-              actionRecommended: 'Organize volunteer cleanup',
-              comment: "Assigned eco-volunteer squad for España cleanup this Friday. Join us at 8 AM!",
-              createdAt: Date.now() - 1000 * 60 * 60 * 4
-            }
-          ]
-        },
-        {
-          id: 'p-3',
-          userId: 'user-3',
-          userName: 'Kevin Ramos',
-          description: "Discarded fluorescent light tubes and electronic parts lying broken on the pavement. Risk of mercury inhalation and cuts for passing pedestrians.",
-          imageUrl: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?auto=format&fit=crop&q=80&w=800",
-          category: 'hazardous',
-          location: { lat: 14.6178, lng: 120.9922, address: "Lacson Ave corner Dimasalang, Sampaloc, Manila" },
-          createdAt: Date.now() - 1000 * 60 * 60 * 24 * 5, // 5 days ago
-          status: 'resolved',
-          confirms: [
-            {
-              id: 'c-4',
-              userName: 'Maria Santos',
-              type: 'confirm-cleaned',
-              comment: "Awesome! The barangay workers came with gloves and safety kits to pick up the broken hazardous tubes this morning. Area is clean and safe now!",
-              createdAt: Date.now() - 1000 * 60 * 60 * 12
-            }
-          ]
+    const q = query(collection(db, 'contributions'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      if (snapshot.empty) {
+        // Seed high-fidelity default Sampaloc location pins if Firestore is empty
+        const initialPosts: UserContribution[] = [
+          {
+            id: 'p-1',
+            userId: 'user-2',
+            userName: 'Maria Santos',
+            description: "Large pile of plastic trash bags and discarded wooden furniture sitting right beside the main G. Tuazon traffic flow. It's obstructing pedestrians and attracting stray animals.",
+            imageUrl: "https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?auto=format&fit=crop&q=80&w=800",
+            category: 'illegal-dumping',
+            location: { lat: 14.6135, lng: 121.0012, address: "G. Tuazon St, Sampaloc, Manila" },
+            createdAt: Date.now() - 1000 * 60 * 60 * 24 * 3, // 3 days ago
+            status: 'pending',
+            confirms: [
+              {
+                id: 'c-1',
+                userName: 'Kevin Ramos',
+                type: 'suggest-action',
+                actionRecommended: 'Contact Barangay Officer',
+                comment: "Spoke to the street sweepers. They said they need a larger dump truck here on Wednesday, since there is a regular buildup.",
+                createdAt: Date.now() - 1000 * 60 * 60 * 24 * 2
+              }
+            ]
+          },
+          {
+            id: 'p-2',
+            userId: 'user-1',
+            userName: 'Jose Gabriel',
+            description: "Commercial garbage bin has overflowed with take-out cartons and empty plastic beverage cups. It is starting to smell as it was soaked in rain.",
+            imageUrl: "https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&q=80&w=800",
+            category: 'missed-collection',
+            location: { lat: 14.6087, lng: 120.9895, address: "España Blvd, Sampaloc, Manila (Near UST walkway)" },
+            createdAt: Date.now() - 1000 * 60 * 60 * 12, // 12 hours ago
+            status: 'in-progress',
+            confirms: [
+              {
+                id: 'c-2',
+                userName: 'Maria Santos',
+                type: 'suggest-action',
+                actionRecommended: 'Install bigger bins',
+                comment: "This UST walkway gets heavy foot traffic. A regular bin isn't enough, we need a high-capacity segregated waste bin.",
+                createdAt: Date.now() - 1000 * 60 * 60 * 8
+              },
+              {
+                id: 'c-3',
+                userName: 'Admin Administrator',
+                type: 'suggest-action',
+                actionRecommended: 'Organize volunteer cleanup',
+                comment: "Assigned eco-volunteer squad for España cleanup this Friday. Join us at 8 AM!",
+                createdAt: Date.now() - 1000 * 60 * 60 * 4
+              }
+            ]
+          },
+          {
+            id: 'p-3',
+            userId: 'user-3',
+            userName: 'Kevin Ramos',
+            description: "Discarded fluorescent light tubes and electronic parts lying broken on the pavement. Risk of mercury inhalation and cuts for passing pedestrians.",
+            imageUrl: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?auto=format&fit=crop&q=80&w=800",
+            category: 'hazardous',
+            location: { lat: 14.6178, lng: 120.9922, address: "Lacson Ave corner Dimasalang, Sampaloc, Manila" },
+            createdAt: Date.now() - 1000 * 60 * 60 * 24 * 5, // 5 days ago
+            status: 'resolved',
+            confirms: [
+              {
+                id: 'c-4',
+                userName: 'Maria Santos',
+                type: 'confirm-cleaned',
+                comment: "Awesome! The barangay workers came with gloves and safety kits to pick up the broken hazardous tubes this morning. Area is clean and safe now!",
+                createdAt: Date.now() - 1000 * 60 * 60 * 12
+              }
+            ]
+          }
+        ];
+        for (const p of initialPosts) {
+          await saveFirebaseContribution(p);
         }
-      ];
-      setPosts(initialPosts);
-      localStorage.setItem('cleanpin_locations', JSON.stringify(initialPosts));
-    }
+      } else {
+        const cloudPosts: UserContribution[] = [];
+        snapshot.forEach(docSnap => {
+          cloudPosts.push(docSnap.data() as UserContribution);
+        });
+        setPosts(cloudPosts);
+      }
+    }, (error) => {
+      console.warn("Firestore subscription error for contributions:", error);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  // Sync posts to LocalStorage
   useEffect(() => {
-    if (posts.length > 0) {
-      localStorage.setItem('cleanpin_locations', JSON.stringify(posts));
-    }
-  }, [posts]);
-
-  useEffect(() => {
-    // Check for existing session
     const savedSession = localStorage.getItem('cleanpin_session');
     if (savedSession) {
       try {
@@ -150,7 +152,7 @@ export default function App() {
     }
   }, []);
 
-  const handleLogin = (role: 'user' | 'admin', customName?: string, customEmail?: string) => {
+  const handleLogin = async (role: 'user' | 'admin', customName?: string, customEmail?: string) => {
     const email = (customEmail && customEmail.trim()) || (role === 'admin' ? 'admin@cleanpin.ph' : 'josegabriel@cleanpin.ph');
     
     // Check if we have an existing user structure in localStorage
@@ -161,7 +163,7 @@ export default function App() {
     const displayName = existingUser?.name || (customName && customName.trim()) || (role === 'admin' ? 'Admin Administrator' : 'Jose Gabriel');
     
     const mockUser: UserProfile = {
-      uid: existingUser?.id || (role === 'admin' ? 'admin-1' : `user-${email}-${Date.now()}`),
+      uid: existingUser?.id || (role === 'admin' ? 'admin-1' : `user-${email.replace(/[@.]/g, '-')}-${Date.now()}`),
       displayName: displayName,
       email: email,
       photoURL: (email === 'josegabriel@cleanpin.ph' || displayName === 'Jose Gabriel') 
@@ -177,6 +179,7 @@ export default function App() {
     setIsLoggedIn(true);
     setActiveTab(role === 'admin' ? 'admin' : 'home');
     localStorage.setItem('cleanpin_session', JSON.stringify(mockUser));
+    await saveFirebaseUser(mockUser);
   };
 
   const handleLogout = () => {
@@ -185,7 +188,7 @@ export default function App() {
     setIsLoggedIn(false);
   };
 
-  const handleNewPost = (data: any) => {
+  const handleNewPost = async (data: any) => {
     if (!user) return;
     const newPost: UserContribution = {
       id: Math.random().toString(36).substr(2, 9),
@@ -198,19 +201,22 @@ export default function App() {
       createdAt: Date.now(),
       status: 'pending'
     };
-    setPosts([newPost, ...posts]);
+    await saveFirebaseContribution(newPost);
     setToast({ message: 'Trash report successfully posted!', type: 'success' });
   };
 
-  const updatePostStatus = (id: string, status: UserContribution['status']) => {
-    setPosts(posts.map(p => p.id === id ? { ...p, status } : p));
+  const updatePostStatus = async (id: string, status: UserContribution['status']) => {
+    const postToUpdate = posts.find(p => p.id === id);
+    if (postToUpdate) {
+      await saveFirebaseContribution({ ...postToUpdate, status });
+    }
   };
 
-  const deletePost = (id: string) => {
-    setPosts(posts.filter(p => p.id !== id));
+  const deletePost = async (id: string) => {
+    await deleteFirebaseContribution(id);
   };
 
-  const handleConfirmOrRecommend = (
+  const handleConfirmOrRecommend = async (
     pinId: string,
     type: 'confirm-cleaned' | 'suggest-action',
     actionRecommended?: string,
@@ -227,28 +233,26 @@ export default function App() {
       createdAt: Date.now()
     };
 
-    const updatedPosts = posts.map(post => {
-      if (post.id === pinId) {
-        const existingConfirms = post.confirms || [];
-        
-        // Auto update status based on community feedback
-        let updatedStatus = post.status;
-        if (type === 'confirm-cleaned') {
-          updatedStatus = 'resolved'; // Mark as resolved/cleaned
-        } else if (type === 'suggest-action') {
-          updatedStatus = 'in-progress'; // Mark as in-progress / action-taken
-        }
+    const targetPost = posts.find(p => p.id === pinId);
+    if (!targetPost) return;
 
-        return {
-          ...post,
-          status: updatedStatus,
-          confirms: [newConfirm, ...existingConfirms]
-        };
-      }
-      return post;
-    });
+    const existingConfirms = targetPost.confirms || [];
+    
+    // Auto update status based on community feedback
+    let updatedStatus = targetPost.status;
+    if (type === 'confirm-cleaned') {
+      updatedStatus = 'resolved'; // Mark as resolved/cleaned
+    } else if (type === 'suggest-action') {
+      updatedStatus = 'in-progress'; // Mark as in-progress / action-taken
+    }
 
-    setPosts(updatedPosts);
+    const updatedPost = {
+      ...targetPost,
+      status: updatedStatus,
+      confirms: [newConfirm, ...existingConfirms]
+    };
+
+    await saveFirebaseContribution(updatedPost);
 
     // Reward the user with 15 XP points!
     const updatedUser = {
@@ -258,6 +262,7 @@ export default function App() {
     };
     setUser(updatedUser);
     localStorage.setItem('cleanpin_session', JSON.stringify(updatedUser));
+    await saveFirebaseUser(updatedUser);
 
     // Update in stored accounts too
     const storedAccounts = JSON.parse(localStorage.getItem('cleanpin_accounts') || '[]');

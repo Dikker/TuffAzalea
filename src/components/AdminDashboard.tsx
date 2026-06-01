@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Shield, CheckCircle, Trash2, AlertCircle, Eye, 
   ExternalLink, Users, History, LayoutDashboard, 
@@ -9,6 +9,8 @@ import { UserContribution, UserProfile, SystemLog } from '../types';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import { db, saveFirebaseUser, saveFirebaseSystemLog } from '../lib/firebase';
+import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 
 interface AdminDashboardProps {
   posts: UserContribution[];
@@ -21,69 +23,115 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ posts, onStatusUpdate, 
   const [searchQuery, setSearchQuery] = useState('');
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
-  // Mock data for Users
-  const [users, setUsers] = useState<UserProfile[]>([
-    {
-      uid: 'admin-1',
-      displayName: 'Admin Administrator',
-      email: 'admin@cleanpin.ph',
-      role: 'admin',
-      points: 1200,
-      level: 25,
-      contributions: 45,
-      achievements: [],
-      isBanned: false
-    },
-    {
-      uid: 'user-1',
-      displayName: 'Jose Gabriel',
-      email: 'josegabriel@cleanpin.ph',
-      role: 'user',
-      points: 450,
-      level: 12,
-      contributions: 12,
-      achievements: [],
-      isBanned: false
-    },
-    {
-      uid: 'user-2',
-      displayName: 'Maria Santos',
-      email: 'maria.santos@gmail.com',
-      role: 'user',
-      points: 890,
-      level: 18,
-      contributions: 28,
-      achievements: [],
-      isBanned: false
-    },
-    {
-      uid: 'user-3',
-      displayName: 'Kevin Ramos',
-      email: 'kevin.r@yahoo.com',
-      role: 'user',
-      points: 120,
-      level: 5,
-      contributions: 4,
-      achievements: [],
-      isBanned: false
-    }
-  ]);
+  // Sync state with Firestore
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [systemLogs, setSystemLogs] = useState<SystemLog[]>([]);
 
-  // Mock data for System Logs
-  const [systemLogs, setSystemLogs] = useState<SystemLog[]>([
-    { id: 'l1', action: 'Login Success', user: 'admin@cleanpin.ph', timestamp: Date.now() - 1000 * 60 * 5, type: 'auth' },
-    { id: 'l2', action: 'Verified Report #X452', user: 'admin@cleanpin.ph', target: 'Report #X452', timestamp: Date.now() - 1000 * 60 * 60, type: 'moderation' },
-    { id: 'l3', action: 'New User Registered', user: 'System', target: 'kevin.r@yahoo.com', timestamp: Date.now() - 1000 * 60 * 60 * 3, type: 'user' },
-    { id: 'l4', action: 'Updated User Role', user: 'admin@cleanpin.ph', target: 'maria.santos@gmail.com', timestamp: Date.now() - 1000 * 60 * 60 * 5, type: 'user' },
-    { id: 'l5', action: 'System Backup Complete', user: 'System', timestamp: Date.now() - 1000 * 60 * 60 * 12, type: 'system' }
-  ]);
+  useEffect(() => {
+    // Real-time sync of users from Firestore
+    const qUsers = query(collection(db, 'users'), orderBy('points', 'desc'));
+    const unsubscribeUsers = onSnapshot(qUsers, async (snapshot) => {
+      if (snapshot.empty) {
+        // Seed default users if Firestore 'users' is empty
+        const defaultUsers: UserProfile[] = [
+          {
+            uid: 'admin-1',
+            displayName: 'Admin Administrator',
+            email: 'admin@cleanpin.ph',
+            role: 'admin',
+            points: 1200,
+            level: 25,
+            contributions: 45,
+            achievements: [],
+            isBanned: false
+          },
+          {
+            uid: 'user-1',
+            displayName: 'Jose Gabriel',
+            email: 'josegabriel@cleanpin.ph',
+            role: 'user',
+            points: 450,
+            level: 12,
+            contributions: 12,
+            achievements: [],
+            isBanned: false
+          },
+          {
+            uid: 'user-2',
+            displayName: 'Maria Santos',
+            email: 'maria.santos@gmail.com',
+            role: 'user',
+            points: 890,
+            level: 18,
+            contributions: 28,
+            achievements: [],
+            isBanned: false
+          },
+          {
+            uid: 'user-3',
+            displayName: 'Kevin Ramos',
+            email: 'kevin.r@yahoo.com',
+            role: 'user',
+            points: 120,
+            level: 5,
+            contributions: 4,
+            achievements: [],
+            isBanned: false
+          }
+        ];
+        for (const u of defaultUsers) {
+          await saveFirebaseUser(u);
+        }
+      } else {
+        const cloudUsers: UserProfile[] = [];
+        snapshot.forEach(docSnap => {
+          cloudUsers.push(docSnap.data() as UserProfile);
+        });
+        setUsers(cloudUsers);
+      }
+    }, (error) => {
+      console.warn("Firestore subscription error for users:", error);
+    });
+
+    return () => unsubscribeUsers();
+  }, []);
+
+  useEffect(() => {
+    // Real-time sync of system logs from Firestore
+    const qLogs = query(collection(db, 'system_logs'), orderBy('timestamp', 'desc'));
+    const unsubscribeLogs = onSnapshot(qLogs, async (snapshot) => {
+      if (snapshot.empty) {
+        // Seed default system logs
+        const defaultLogs: SystemLog[] = [
+          { id: 'l1', action: 'Login Success', user: 'admin@cleanpin.ph', timestamp: Date.now() - 1000 * 60 * 5, type: 'auth' },
+          { id: 'l2', action: 'Verified Report #p-2', user: 'admin@cleanpin.ph', target: 'Report #p-2', timestamp: Date.now() - 1000 * 60 * 60, type: 'moderation' },
+          { id: 'l3', action: 'New User Registered', user: 'System', target: 'kevin.r@yahoo.com', timestamp: Date.now() - 1000 * 60 * 60 * 3, type: 'user' },
+          { id: 'l4', action: 'Updated User Role', user: 'admin@cleanpin.ph', target: 'maria.santos@gmail.com', timestamp: Date.now() - 1000 * 60 * 60 * 5, type: 'user' },
+          { id: 'l5', action: 'System Backup Complete', user: 'System', timestamp: Date.now() - 1000 * 60 * 60 * 12, type: 'system' }
+        ];
+        for (const log of defaultLogs) {
+          await saveFirebaseSystemLog(log);
+        }
+      } else {
+        const cloudLogs: SystemLog[] = [];
+        snapshot.forEach(docSnap => {
+          cloudLogs.push(docSnap.data() as SystemLog);
+        });
+        setSystemLogs(cloudLogs);
+      }
+    }, (error) => {
+      console.warn("Firestore subscription error for system logs:", error);
+    });
+
+    return () => unsubscribeLogs();
+  }, []);
 
   // Modal States
   const [editModal, setEditModal] = useState<{ isOpen: boolean; user: UserProfile | null }>({ isOpen: false, user: null });
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; user: UserProfile | null }>({ isOpen: false, user: null });
   const [banModal, setBanModal] = useState<{ isOpen: boolean; user: UserProfile | null }>({ isOpen: false, user: null });
 
-  const addLog = (action: string, target?: string, type: SystemLog['type'] = 'user') => {
+  const addLog = async (action: string, target?: string, type: SystemLog['type'] = 'user') => {
     const newLog: SystemLog = {
       id: `l-${Date.now()}`,
       action,
@@ -92,35 +140,40 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ posts, onStatusUpdate, 
       timestamp: Date.now(),
       type
     };
-    setSystemLogs([newLog, ...systemLogs]);
+    await saveFirebaseSystemLog(newLog);
   };
 
-  const handleUpdateUserInfo = (uid: string, name: string, email: string) => {
-    setUsers(users.map(u => u.uid === uid ? { ...u, displayName: name, email: email } : u));
-    addLog('Updated User Profile', email);
+  const handleUpdateUserInfo = async (uid: string, name: string, email: string) => {
+    const userToUpdate = users.find(u => u.uid === uid);
+    if (userToUpdate) {
+      const updated = { ...userToUpdate, displayName: name, email };
+      await saveFirebaseUser(updated);
+      await addLog('Updated User Profile', email);
+    }
     setEditModal({ isOpen: false, user: null });
   };
 
-  const handleConfirmDelete = (uid: string) => {
-    const user = users.find(u => u.uid === uid);
-    if (user) {
-      setUsers(users.filter(u => u.uid !== uid));
-      addLog('Deleted User Account', user.email, 'moderation');
+  const handleConfirmDelete = async (uid: string) => {
+    const userToDelete = users.find(u => u.uid === uid);
+    if (userToDelete) {
+      await deleteDoc(doc(db, 'users', uid));
+      await addLog('Deleted User Account', userToDelete.email, 'moderation');
     }
     setDeleteModal({ isOpen: false, user: null });
   };
 
-  const handleConfirmBan = (uid: string, duration: string) => {
-    const user = users.find(u => u.uid === uid);
-    if (user) {
-      const isUnbanning = user.isBanned;
-      setUsers(users.map(u => u.uid === uid ? { ...u, isBanned: !isUnbanning } : u));
-      addLog(isUnbanning ? 'Unbanned User' : `Banned User (${duration})`, user.email, 'moderation');
+  const handleConfirmBan = async (uid: string, duration: string) => {
+    const userToBan = users.find(u => u.uid === uid);
+    if (userToBan) {
+      const isUnbanning = userToBan.isBanned;
+      const updated = { ...userToBan, isBanned: !isUnbanning };
+      await saveFirebaseUser(updated);
+      await addLog(isUnbanning ? 'Unbanned User' : `Banned User (${duration})`, userToBan.email, 'moderation');
     }
     setBanModal({ isOpen: false, user: null });
   };
 
-  const handleAddUser = () => {
+  const handleAddUser = async () => {
     const name = prompt('Enter user full name:');
     if (!name) return;
     const email = prompt('Enter user email:');
@@ -137,25 +190,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ posts, onStatusUpdate, 
       achievements: []
     };
 
-    setUsers([...users, newUser]);
-    addLog('Manually Added User', email);
+    await saveFirebaseUser(newUser);
+    await addLog('Manually Added User', email);
     alert(`User ${name} has been created.`);
   };
 
-  const handleExportData = (type: string) => {
+  const handleExportData = async (type: string) => {
     alert(`Exporting ${type} as CSV... (Mock Download)`);
-    addLog(`Exported ${type} Data`, undefined, 'system');
+    await addLog(`Exported ${type} Data`, undefined, 'system');
   };
 
-  const handleToggleRole = (uid: string) => {
-    setUsers(users.map(u => {
-      if (u.uid === uid) {
-        const newRole = u.role === 'admin' ? 'user' : 'admin';
-        addLog(`Changed role to ${newRole}`, u.email);
-        return { ...u, role: newRole as 'admin' | 'user' };
-      }
-      return u;
-    }));
+  const handleToggleRole = async (uid: string) => {
+    const userToToggle = users.find(u => u.uid === uid);
+    if (userToToggle) {
+      const newRole = userToToggle.role === 'admin' ? 'user' : 'admin';
+      const updated = { ...userToToggle, role: newRole as 'admin' | 'user' };
+      await saveFirebaseUser(updated);
+      await addLog(`Changed role to ${newRole}`, userToToggle.email);
+    }
   };
 
   const filteredUsers = users.filter(u => 
