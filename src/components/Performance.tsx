@@ -1,25 +1,58 @@
 import React from 'react';
 import { Award, Target, TrendingUp, Shield, Map as MapIcon, Trash2, Mail, User } from 'lucide-react';
-import { UserProfile } from '../types';
+import { UserProfile, UserContribution } from '../types';
 
 interface PerformanceProps {
   user: UserProfile | null;
+  posts: UserContribution[];
 }
 
-const Performance: React.FC<PerformanceProps> = ({ user }) => {
+const Performance: React.FC<PerformanceProps> = ({ user, posts }) => {
+  const userPosts = posts.filter(p => p.userId === user?.uid);
+  const totalPostsCount = Math.max(user?.contributions || 0, userPosts.length);
+  
+  // Dynamic stats
+  const verifiedCleansCount = posts.filter(p => p.userId === user?.uid && (p.status === 'resolved' || p.status === 'verified')).length;
+  
+  // Calculate Rank Label
+  const points = user?.points || 0;
+  let rankLabel = 'Bronze';
+  if (points >= 300) rankLabel = 'Legendary';
+  else if (points >= 150) rankLabel = 'Gold';
+  else if (points >= 50) rankLabel = 'Silver';
+
   const stats = [
-    { label: 'Total Posts', value: user?.contributions?.toString() || '0', icon: Trash2, color: 'text-blue-500', bg: 'bg-blue-50' },
-    { label: 'Verified cleans', value: '0', icon: Shield, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { label: 'Points', value: user?.points?.toString() || '0', icon: TrendingUp, color: 'text-amber-500', bg: 'bg-amber-50' },
-    { label: 'Rank', value: 'N/A', icon: Target, color: 'text-purple-500', bg: 'bg-purple-50' },
+    { label: 'Total Posts', value: totalPostsCount.toString(), icon: Trash2, color: 'text-blue-500', bg: 'bg-blue-50' },
+    { label: 'Verified cleans', value: verifiedCleansCount.toString(), icon: Shield, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { label: 'Points', value: points.toString(), icon: TrendingUp, color: 'text-amber-500', bg: 'bg-amber-50' },
+    { label: 'Rank', value: rankLabel, icon: Target, color: 'text-purple-500', bg: 'bg-purple-50' },
   ];
 
+  // Dynamic achievements checks
+  
+  // 1. Community Hero: Post at least 5 reports or contributions
+  const hasHero = totalPostsCount >= 5;
+  
+  // 2. Eagle Eye: Report waste that has been verified/confirmed by others
+  const hasEagle = userPosts.some(p => (p.confirms?.length ?? 0) >= 1 || p.status === 'resolved' || p.status === 'verified') || (userPosts.length > 0 && points >= 100);
+  
+  // 3. Waste Warrior: Helped verify or comment on someone else's post OR points >= 150
+  const hasWarrior = posts.some(p => p.userId !== user?.uid && p.confirms?.some(c => c.userName === user?.displayName)) || points >= 150;
+  
+  // 4. SDG Advocate: Share at least 3 news articles (let's check news shares from localStorage)
+  const sharedArticleIds = JSON.parse(localStorage.getItem('cleanpin_news_shares') || '[]');
+  const sharedCount = sharedArticleIds.length;
+  const hasAdvocate = sharedCount >= 3;
+
   const achievements = [
-    { id: '1', title: 'Community Hero', description: 'Post at least 5 reports in a single neighborhood.', unlocked: false, icon: Award },
-    { id: '2', title: 'Eagle Eye', description: 'Report waste that is verified by 10+ users.', unlocked: false, icon: Shield },
-    { id: '3', title: 'Waste Warrior', description: 'Successfully lead a community cleanup event.', unlocked: false, icon: Award },
-    { id: '4', title: 'SDG Advocate', description: 'Share 10 news articles from the feed.', unlocked: false, icon: Target },
+    { id: '1', title: 'Community Hero', description: `Post at least 5 reports in a single neighborhood (Current: ${totalPostsCount}/5).`, unlocked: hasHero, icon: Award },
+    { id: '2', title: 'Eagle Eye', description: 'Report waste that receives community action or verification.', unlocked: hasEagle, icon: Shield },
+    { id: '3', title: 'Waste Warrior', description: 'Successfully participate in logs or earn 150+ eco points.', unlocked: hasWarrior, icon: Award },
+    { id: '4', title: 'SDG Advocate', description: `Share at least 3 news articles from the daily feed (Shared: ${sharedCount}/3).`, unlocked: hasAdvocate, icon: Target },
   ];
+
+  const unlockedCount = achievements.filter(a => a.unlocked).length;
+
 
   return (
     <div className="space-y-4 md:space-y-6 animate-in fade-in duration-500">
@@ -92,7 +125,7 @@ const Performance: React.FC<PerformanceProps> = ({ user }) => {
         <div className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-border">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-display font-bold text-[#064e3b]">Achievements</h2>
-            <span className="text-[10px] font-bold text-primary px-2 py-1 bg-secondary rounded-lg border border-primary/20">0/4 UNLOCKED</span>
+            <span className="text-[10px] font-bold text-primary px-2 py-1 bg-secondary rounded-lg border border-primary/20">{unlockedCount}/4 UNLOCKED</span>
           </div>
           
           <div className="space-y-3">

@@ -43,6 +43,21 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
       {/* Post Content */}
       <div className="p-4">
         <p className="text-sm text-slate-600 leading-relaxed mb-4">{post.description}</p>
+
+        {post.aiVerification && (
+          <div className={`p-3 rounded-lg border-l-4 text-xs mb-4 leading-normal shadow-sm flex flex-col gap-1.5 ${
+            post.aiVerification.authentic 
+              ? "bg-[#f0fdf4] border-[#10b981] text-[#064e3b] border-t border-r border-b border-[#d1fae5]" 
+              : "bg-[#fef2f2] border-[#ef4444] text-[#7f1d1d] border-t border-r border-b border-[#fee2e2]"
+          }`}>
+            <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[9px]">
+              <span className={`w-1.5 h-1.5 rounded-full ${post.aiVerification.authentic ? "bg-[#10b981]" : "bg-[#ef4444]"}`} />
+              <span>{post.aiVerification.authentic ? "🤖 Gemini AI Verified" : "⚠️ Gemini AI Flagged"}</span>
+              <span className="text-[10px] opacity-75 font-mono normal-case">({post.aiVerification.score}% match)</span>
+            </div>
+            <p className="opacity-95 text-[11px] leading-snug">{post.aiVerification.reason}</p>
+          </div>
+        )}
         
         <div className="flex items-center justify-between pt-3 border-t border-slate-100">
           <div className="flex items-center space-x-4">

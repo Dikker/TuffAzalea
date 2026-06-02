@@ -72,7 +72,12 @@ export default function App() {
               comment: "Spoke to the street sweepers. They said they need a larger dump truck here on Wednesday, since there is a regular buildup.",
               createdAt: Date.now() - 1000 * 60 * 60 * 24 * 2
             }
-          ]
+          ],
+          aiVerification: {
+            authentic: true,
+            reason: "Detailed street obstructing trash heap reported. Consistent with municipal blockages.",
+            score: 96
+          }
         },
         {
           id: 'p-2',
@@ -101,7 +106,12 @@ export default function App() {
               comment: "Assigned eco-volunteer squad for España cleanup this Friday. Join us at 8 AM!",
               createdAt: Date.now() - 1000 * 60 * 60 * 4
             }
-          ]
+          ],
+          aiVerification: {
+            authentic: true,
+            reason: "Valid waste point reported containing local landmarks and pedestrian details. Authenticity score high.",
+            score: 98
+          }
         },
         {
           id: 'p-3',
@@ -121,7 +131,12 @@ export default function App() {
               comment: "Awesome! The barangay workers came with gloves and safety kits to pick up the broken hazardous tubes this morning. Area is clean and safe now!",
               createdAt: Date.now() - 1000 * 60 * 60 * 12
             }
-          ]
+          ],
+          aiVerification: {
+            authentic: true,
+            reason: "Hazardous electronic components identified. Confirms immediate public attention criteria.",
+            score: 95
+          }
         }
       ];
       setPosts(initialPosts);
@@ -185,10 +200,12 @@ export default function App() {
     setIsLoggedIn(false);
   };
 
-  const handleNewPost = (data: any) => {
+  const handleNewPost = async (data: any) => {
     if (!user) return;
+    const postId = Math.random().toString(36).substr(2, 9);
+    
     const newPost: UserContribution = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: postId,
       userId: user.uid,
       userName: user.displayName,
       description: data.description,
@@ -196,10 +213,61 @@ export default function App() {
       category: data.category || 'other',
       location: { lat: data.lat, lng: data.lng },
       createdAt: Date.now(),
-      status: 'pending'
+      status: 'pending',
+      aiVerification: {
+        authentic: true,
+        reason: 'Analyzing report contents in real-time with Gemini AI...',
+        score: 50
+      }
     };
-    setPosts([newPost, ...posts]);
+    
+    setPosts(prevPosts => [newPost, ...prevPosts]);
     setToast({ message: 'Trash report successfully posted!', type: 'success' });
+    
+    // Increment total contributions in user profile to count for achievements as progress is logged!
+    const updatedUser = {
+      ...user,
+      contributions: (user.contributions || 0) + 1,
+      points: user.points + 20, // +20 points for clean-reporting!
+      level: Math.floor((user.points + 20) / 100) + 1
+    };
+    setUser(updatedUser);
+    localStorage.setItem('cleanpin_session', JSON.stringify(updatedUser));
+
+    // Update in accounts too
+    const storedAccounts = JSON.parse(localStorage.getItem('cleanpin_accounts') || '[]');
+    const newAccounts = storedAccounts.map((a: any) => 
+      a.email.toLowerCase() === user.email.toLowerCase()
+        ? { ...a, contributions: updatedUser.contributions, points: updatedUser.points, level: updatedUser.level }
+        : a
+    );
+    localStorage.setItem('cleanpin_accounts', JSON.stringify(newAccounts));
+
+    // Async verify post report on our secure backend API endpoint via Gemini AI
+    try {
+      const response = await fetch('/api/verify-post', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description: data.description,
+          category: data.category
+        })
+      });
+      if (response.ok) {
+        const result = await response.json();
+        setPosts(prev => prev.map(p => {
+          if (p.id === postId) {
+            return {
+              ...p,
+              aiVerification: result
+            };
+          }
+          return p;
+        }));
+      }
+    } catch (err) {
+      console.error("Gemini Verification Call Error:", err);
+    }
   };
 
   const updatePostStatus = (id: string, status: UserContribution['status']) => {
@@ -208,6 +276,31 @@ export default function App() {
 
   const deletePost = (id: string) => {
     setPosts(posts.filter(p => p.id !== id));
+  };
+
+  const handleShareNewsArticle = (title: string, id: string) => {
+    if (!user) return;
+    
+    const updatedUser = {
+      ...user,
+      points: user.points + 10,
+      level: Math.floor((user.points + 10) / 100) + 1
+    };
+    setUser(updatedUser);
+    localStorage.setItem('cleanpin_session', JSON.stringify(updatedUser));
+
+    const storedAccounts = JSON.parse(localStorage.getItem('cleanpin_accounts') || '[]');
+    const newAccounts = storedAccounts.map((a: any) => 
+      a.email.toLowerCase() === user.email.toLowerCase()
+        ? { ...a, points: updatedUser.points, level: updatedUser.level }
+        : a
+    );
+    localStorage.setItem('cleanpin_accounts', JSON.stringify(newAccounts));
+
+    setToast({
+      message: `Advocated SDG 11: Shared "${title.substring(0, 30)}..." and earned +10 Eco points!`,
+      type: 'success'
+    });
   };
 
   const handleConfirmOrRecommend = (
@@ -374,8 +467,8 @@ export default function App() {
             </div>
 
             {/* Side Activity Panel */}
-            <div className="lg:col-span-1 space-y-6 flex flex-col min-h-[400px]">
-              <div className="bg-white rounded-2xl border border-border flex flex-col h-full overflow-hidden">
+            <div className="lg:col-span-1 flex flex-col gap-6 min-h-[400px] min-w-0">
+              <div className="bg-white rounded-2xl border border-border flex flex-col h-[400px] overflow-hidden shadow-sm">
                 <div className="p-6 border-b border-muted">
                   <h2 className="font-display font-bold text-lg">Community Activity</h2>
                   <p className="text-xs text-muted-foreground mt-1">Live updates from Metro Manila</p>
@@ -451,6 +544,11 @@ export default function App() {
                      </p>
                   </div>
                 </div>
+              </div>
+
+              {/* Dynamic Gemini SDG 11 News Feed */}
+              <div className="h-[385px] flex-shrink-0 animate-in fade-in duration-500">
+                <NewsFeed onShareArticle={handleShareNewsArticle} />
               </div>
             </div>
           </div>
@@ -879,7 +977,7 @@ export default function App() {
         );
       }
       case 'performance':
-        return <Performance user={user} />;
+        return <Performance user={user} posts={posts} />;
       case 'community':
         return <Community user={user} posts={posts} />;
       case 'about':

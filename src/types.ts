@@ -24,6 +24,11 @@ export interface UserContribution {
   createdAt: number;
   status: 'pending' | 'in-progress' | 'resolved' | 'verified';
   confirms?: PinConfirm[];
+  aiVerification?: {
+    authentic: boolean;
+    reason: string;
+    score: number;
+  };
 }
 
 export interface UserProfile {
