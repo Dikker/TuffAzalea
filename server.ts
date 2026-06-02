@@ -96,7 +96,7 @@ async function startServer() {
   // API Route: Verify post authenticity using Gemini
   app.post("/api/verify-post", async (req, res) => {
     try {
-      const { description, category } = req.body;
+      const { description, category, image } = req.body;
 
       if (!description) {
         return res.status(400).json({
@@ -106,32 +106,54 @@ async function startServer() {
         });
       }
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: [
-          {
-            text: `Evaluate the authenticity of the following community trash/waste/sustainability report in the Philippines. 
-Check if it describes a real community situation of littering, hazardous waste, missed collection, or municipal garbage overflow.
-Flag it as inauthentic (authentic: false) if it is:
-1. Simple keyboard smash, gibberish (e.g. "asdfasdf", "test", "hello world"), or short mock strings that contain no descriptive value.
-2. Completely unrelated text (e.g., advertisements, personal blogs, dating spam, political propaganda).
-3. Sarcastic/troll remarks that don't represent any waste or environmental issue.
-4. Testing placeholders like "This is a test description".
+      // Check if image is provided as base64 data URL
+      let imagePart: any = null;
+      if (image && typeof image === "string" && image.startsWith("data:")) {
+        const matches = image.match(/^data:([^;]+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+          imagePart = {
+            inlineData: {
+              mimeType: matches[1],
+              data: matches[2]
+            }
+          };
+        }
+      }
 
-Report to evaluate:
+      const parts: any[] = [];
+      if (imagePart) {
+        parts.push(imagePart);
+      }
+      parts.push({
+        text: `Evaluate the authenticity of the following community trash/waste/sustainability report in the Philippines.
+Check:
+- Is the text description aligned with a legitimate environmental, trash, or sustainability issue?
+- If an image is provided, is it a real image depicting waste, litter, garbage, landfill, dumped items, or a sustainability issue corresponding to the report?
+
+Flag the report as INAUTHENTIC (authentic: false) if:
+- The text description is a keyboard smash, gibberish (e.g. "asdfasdf", "test", "hello world"), unrelated spam, advertisements, personal blogs, or testing placeholder text.
+- If an image is provided, and it is a troll/fake/spam upload (e.g., a meme, cartoon, generic abstract stock photo, selfie of a person with no visible trash problem, picture of food, clean pets, or random household item unrelated to any waste or environmental issue).
+Wait, if the image shows some trash, garbage, or an environmental issue, flag it as authentic: true.
+If no image is uploaded (i.e. only text), evaluate based purely on the description's validity.
+
+Report Details to Evaluate:
 - Category Specified: ${category || "other"}
 - Text Description: "${description}"
+${imagePart ? "- Image Evidence: (Analyze the attached image part to verify if it depicts actual trash, litter, or garbage accumulation)" : "- Image Evidence: None provided."}
 
 Evaluate carefully and output your verdict in a strict JSON format.`,
-          },
-        ],
+      });
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: { parts: parts },
         config: {
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
             properties: {
-              authentic: { type: Type.BOOLEAN, description: "Whether the report describes a legitimate environmental or waste issue." },
-              reason: { type: Type.STRING, description: "A concise, objective 1-2 sentence explanation of your authenticity assessment." },
+              authentic: { type: Type.BOOLEAN, description: "Whether the report is authentic." },
+              reason: { type: Type.STRING, description: "A concise, objective 1-2 sentence explanation of your assessment." },
               score: { type: Type.INTEGER, description: "Confidence score of this decision as an integer from 0 to 100." },
             },
             required: ["authentic", "reason", "score"],

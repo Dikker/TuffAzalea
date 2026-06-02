@@ -250,7 +250,8 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           description: data.description,
-          category: data.category
+          category: data.category,
+          image: data.image
         })
       });
       if (response.ok) {

@@ -8,8 +8,10 @@ interface PostCardProps {
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
+  const isFlagged = post.aiVerification && !post.aiVerification.authentic;
+
   return (
-    <div className="bg-white rounded-xl border border-border overflow-hidden shadow-sm hover:shadow-md transition-shadow group">
+    <div className={`bg-white rounded-xl border border-border overflow-hidden shadow-sm hover:shadow-md transition-shadow group ${isFlagged ? "border-red-200 shadow-xs ring-1 ring-red-100 bg-red-50/10" : ""}`}>
       {/* Post Header */}
       <div className="p-4 flex items-center justify-between border-b border-slate-50 bg-slate-50/30">
         <div className="flex items-center space-x-3">
@@ -34,10 +36,19 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
 
       {/* Post Image */}
       <div className="aspect-video relative overflow-hidden bg-slate-100">
-        <img src={post.imageUrl} alt="Waste reported" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+        <img 
+          src={post.imageUrl} 
+          alt="Waste reported" 
+          className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${isFlagged ? "grayscale opacity-80" : ""}`} 
+        />
         <div className="absolute top-2 right-2 px-2 py-1 bg-white/90 backdrop-blur rounded text-[10px] font-bold text-primary shadow-sm">
           {post.status.toUpperCase()}
         </div>
+        {isFlagged && (
+          <div className="absolute inset-x-0 bottom-0 py-1.5 bg-[#ef4444] backdrop-blur-xs flex items-center justify-center text-white font-mono font-bold text-[9px] tracking-wider uppercase shadow-md select-none">
+            ⚠️ TROLL REPORT FLAGGED BY GEMINI AI
+          </div>
+        )}
       </div>
 
       {/* Post Content */}
